@@ -1,0 +1,5 @@
+[functions.registro]
+verify_jwt = false
+
+[functions.recuperar-contrasena]
+verify_jwt = false

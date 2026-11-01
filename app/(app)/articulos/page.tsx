@@ -1,0 +1,104 @@
+'use client';
+
+import { useState } from 'react';
+import { Plus } from 'lucide-react';
+import { NuevoArticuloDialog } from '@/components/articulos/nuevo-articulo-dialog';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useArticulos } from '@/hooks/use-articulos';
+import { formatMXN } from '@/lib/format';
+
+export default function ArticulosPage() {
+  const { articulos, cargando, error, recargar } = useArticulos();
+  const [nuevoAbierto, setNuevoAbierto] = useState(false);
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-brand-night">Artículos</h1>
+          <p className="mt-1 text-brand-grape">Catálogo y existencias de la tienda.</p>
+        </div>
+        <Button
+          type="button"
+          size="lg"
+          onClick={() => setNuevoAbierto(true)}
+          className="gap-2 bg-brand-plum text-white hover:bg-brand-grape"
+        >
+          <Plus className="h-5 w-5" aria-hidden />
+          Nuevo artículo
+        </Button>
+      </header>
+
+      {error ? (
+        <div role="alert" className="flex items-center justify-between gap-4 rounded-2xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
+          <span>{error}</span>
+          <button type="button" onClick={() => void recargar()} className="font-semibold underline underline-offset-4">
+            Reintentar
+          </button>
+        </div>
+      ) : cargando ? (
+        <p className="py-16 text-center text-brand-grape">Cargando artículos...</p>
+      ) : articulos.length === 0 ? (
+        <div className="rounded-3xl border-2 border-dashed border-brand-mauve bg-white px-6 py-16 text-center">
+          <p className="text-lg font-semibold text-brand-night">Aún no hay artículos</p>
+          <p className="mt-1 text-brand-grape">Agrega tu primer artículo para empezar a vender.</p>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-brand-lilac">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-brand-lilac hover:bg-brand-lilac">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="h-12 px-4 text-brand-night">Código de barras</TableHead>
+                  <TableHead className="h-12 px-4 text-brand-night">Descripción</TableHead>
+                  <TableHead className="h-12 px-4 text-center text-brand-night">Número</TableHead>
+                  <TableHead className="h-12 px-4 text-right text-brand-night">Precio</TableHead>
+                  <TableHead className="h-12 px-4 text-right text-brand-night">Existencias</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {articulos.map((articulo) => (
+                  <TableRow key={articulo.id} className="border-brand-lilac/60">
+                    <TableCell className="px-4 py-4 tabular-nums text-brand-grape">{articulo.codigo}</TableCell>
+                    <TableCell className="px-4 py-4 font-medium text-brand-night">{articulo.descripcion}</TableCell>
+                    <TableCell className="px-4 py-4 text-center tabular-nums">{articulo.talla}</TableCell>
+                    <TableCell className="px-4 py-4 text-right font-semibold tabular-nums text-brand-night">
+                      {formatMXN(articulo.precio)}
+                    </TableCell>
+                    <TableCell className="px-4 py-4 text-right">
+                      <span
+                        className={
+                          articulo.existencias === 0
+                            ? 'inline-flex rounded-full bg-danger-soft px-3 py-1 text-sm font-semibold text-danger'
+                            : articulo.existencias <= 3
+                              ? 'inline-flex rounded-full bg-warning-soft px-3 py-1 text-sm font-semibold text-warning'
+                              : 'inline-flex rounded-full bg-success-soft px-3 py-1 text-sm font-semibold text-success'
+                        }
+                      >
+                        {articulo.existencias === 0 ? 'Agotado' : articulo.existencias}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+
+      <NuevoArticuloDialog
+        open={nuevoAbierto}
+        onOpenChange={setNuevoAbierto}
+        onCreado={() => void recargar()}
+      />
+    </div>
+  );
+}

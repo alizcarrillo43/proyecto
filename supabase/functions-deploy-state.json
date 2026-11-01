@@ -1,0 +1,13 @@
+{
+  "projectId": "72504877",
+  "functions": {
+    "recuperar-contrasena": {
+      "hasChanged": false,
+      "hash": "4a54332ba0c050bcbbf8a220a8538e3620a2594effe86e63f68a540d18c0efd4"
+    },
+    "registro": {
+      "hasChanged": false,
+      "hash": "cdac183cc71dc30873ef9a26dda42e22eb8762f66e1905580668d1314c665711"
+    }
+  }
+}
