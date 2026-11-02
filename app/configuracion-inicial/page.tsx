@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthBanner } from '@/components/auth-banner';
 import { AuthShell } from '@/components/auth-shell';
@@ -10,16 +9,23 @@ import { TelefonoInput } from '@/components/telefono-input';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { iniciarSesion, mensajeDeError, registrarUsuario } from '@/lib/auth-api';
+import {
+  crearSuperusuario,
+  haceFaltaConfiguracion,
+  iniciarSesion,
+  mensajeDeError,
+} from '@/lib/auth-api';
 import { LADA_POR_DEFECTO } from '@/lib/paises';
 
 const CAMPO_CLASES =
   'border-brand-lilac bg-brand-lilac/40 placeholder:text-brand-plum/70 focus-visible:ring-brand-plum';
 const ETIQUETA_CLASES = 'pl-1 text-brand-night';
 const USUARIO_REGEX = /^[a-z0-9._-]{3,30}$/;
+const CORREO_REGEX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 type Campos = {
   nombre: string;
+  correo: string;
   lada: string;
   telefono: string;
   usuario: string;
@@ -30,6 +36,7 @@ type Errores = Partial<Record<keyof Campos, string>>;
 
 const CAMPOS_VACIOS: Campos = {
   nombre: '',
+  correo: '',
   lada: LADA_POR_DEFECTO,
   telefono: '',
   usuario: '',
@@ -40,6 +47,7 @@ const CAMPOS_VACIOS: Campos = {
 function validar(campos: Campos): Errores {
   const errores: Errores = {};
   if (!campos.nombre.trim()) errores.nombre = 'Escribe tu nombre';
+  if (!CORREO_REGEX.test(campos.correo.trim())) errores.correo = 'Escribe un correo válido';
   if (!/^[0-9]{10}$/.test(campos.telefono.trim())) {
     errores.telefono = 'Escribe un teléfono de 10 dígitos, solo con números';
   }
@@ -51,12 +59,30 @@ function validar(campos: Campos): Errores {
   return errores;
 }
 
-export default function RegistroPage() {
+export default function ConfiguracionInicialPage() {
   const router = useRouter();
+  const [verificando, setVerificando] = useState(true);
   const [campos, setCampos] = useState<Campos>(CAMPOS_VACIOS);
   const [errores, setErrores] = useState<Errores>({});
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    let activo = true;
+    haceFaltaConfiguracion()
+      .then((falta) => {
+        if (!activo) return;
+        if (!falta) router.replace('/login');
+        else setVerificando(false);
+      })
+      .catch(() => {
+        if (activo) setError(mensajeDeError('sin_conexion'));
+        if (activo) setVerificando(false);
+      });
+    return () => {
+      activo = false;
+    };
+  }, [router]);
 
   function actualizarCampo(campo: keyof Campos, valor: string) {
     setCampos((actuales) => ({ ...actuales, [campo]: valor }));
@@ -71,8 +97,9 @@ export default function RegistroPage() {
     if (Object.keys(erroresLocales).length > 0) return;
 
     setEnviando(true);
-    const resultado = await registrarUsuario({
+    const resultado = await crearSuperusuario({
       nombre: campos.nombre.trim(),
+      correo: campos.correo.trim(),
       lada: campos.lada,
       telefono: campos.telefono.trim(),
       usuario: campos.usuario,
@@ -93,17 +120,30 @@ export default function RegistroPage() {
 
     const acceso = await iniciarSesion(campos.usuario, campos.contrasena);
     setEnviando(false);
-    if (acceso.ok) {
-      router.replace('/ventas');
-      return;
-    }
-    router.replace('/login');
+    router.replace(acceso.ok ? '/ventas' : '/login');
+  }
+
+  if (verificando) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-brand-mist">
+        <div
+          role="status"
+          aria-label="Cargando"
+          className="h-10 w-10 animate-spin rounded-full border-4 border-brand-lilac border-t-brand-plum"
+        />
+      </div>
+    );
   }
 
   return (
-    <AuthShell title="Registro" subtitle="Ingresa tus datos">
+    <AuthShell title="Primera configuración" subtitle="Crea la cuenta del dueño o gerente">
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         {error && <AuthBanner>{error}</AuthBanner>}
+
+        <p className="rounded-2xl bg-brand-lilac/40 px-4 py-3 text-sm text-brand-night">
+          Esta cuenta será el superusuario. Solo puede existir una y, después de crearla, esta
+          pantalla deja de estar disponible.
+        </p>
 
         <div className="space-y-2">
           <Label htmlFor="nombre" className={ETIQUETA_CLASES}>
@@ -117,13 +157,28 @@ export default function RegistroPage() {
             value={campos.nombre}
             onChange={(event) => actualizarCampo('nombre', event.target.value)}
             aria-invalid={Boolean(errores.nombre)}
-            aria-describedby={errores.nombre ? 'nombre-error' : undefined}
             className={CAMPO_CLASES}
             placeholder="Nombre y apellido"
           />
-          {errores.nombre && (
-            <p id="nombre-error" className="pl-1 text-sm font-medium text-danger">{errores.nombre}</p>
-          )}
+          {errores.nombre && <p className="pl-1 text-sm font-medium text-danger">{errores.nombre}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="correo" className={ETIQUETA_CLASES}>
+            Correo
+          </Label>
+          <Input
+            id="correo"
+            name="correo"
+            type="email"
+            autoComplete="email"
+            value={campos.correo}
+            onChange={(event) => actualizarCampo('correo', event.target.value)}
+            aria-invalid={Boolean(errores.correo)}
+            className={CAMPO_CLASES}
+            placeholder="correo@ejemplo.com"
+          />
+          {errores.correo && <p className="pl-1 text-sm font-medium text-danger">{errores.correo}</p>}
         </div>
 
         <div className="space-y-2">
@@ -137,16 +192,9 @@ export default function RegistroPage() {
             onLadaChange={(lada) => actualizarCampo('lada', lada)}
             onTelefonoChange={(telefono) => actualizarCampo('telefono', telefono)}
             invalido={Boolean(errores.telefono)}
-            describedBy={errores.telefono ? 'telefono-error' : 'telefono-ayuda'}
             campoClases={CAMPO_CLASES}
           />
-          {errores.telefono ? (
-            <p id="telefono-error" className="pl-1 text-sm font-medium text-danger">{errores.telefono}</p>
-          ) : (
-            <p id="telefono-ayuda" className="pl-1 text-sm text-brand-grape">
-              Te enviaremos aquí el código si olvidas tu contraseña.
-            </p>
-          )}
+          {errores.telefono && <p className="pl-1 text-sm font-medium text-danger">{errores.telefono}</p>}
         </div>
 
         <div className="space-y-2">
@@ -160,13 +208,10 @@ export default function RegistroPage() {
             value={campos.usuario}
             onChange={(event) => actualizarCampo('usuario', event.target.value)}
             aria-invalid={Boolean(errores.usuario)}
-            aria-describedby={errores.usuario ? 'usuario-error' : undefined}
             className={CAMPO_CLASES}
             placeholder="Elige un usuario"
           />
-          {errores.usuario && (
-            <p id="usuario-error" className="pl-1 text-sm font-medium text-danger">{errores.usuario}</p>
-          )}
+          {errores.usuario && <p className="pl-1 text-sm font-medium text-danger">{errores.usuario}</p>}
         </div>
 
         <div className="space-y-2">
@@ -180,13 +225,10 @@ export default function RegistroPage() {
             value={campos.contrasena}
             onChange={(event) => actualizarCampo('contrasena', event.target.value)}
             aria-invalid={Boolean(errores.contrasena)}
-            aria-describedby={errores.contrasena ? 'contrasena-error' : undefined}
             className={CAMPO_CLASES}
             placeholder="Mínimo 8 caracteres"
           />
-          {errores.contrasena && (
-            <p id="contrasena-error" className="pl-1 text-sm font-medium text-danger">{errores.contrasena}</p>
-          )}
+          {errores.contrasena && <p className="pl-1 text-sm font-medium text-danger">{errores.contrasena}</p>}
         </div>
 
         <div className="space-y-2">
@@ -200,33 +242,20 @@ export default function RegistroPage() {
             value={campos.confirmar}
             onChange={(event) => actualizarCampo('confirmar', event.target.value)}
             aria-invalid={Boolean(errores.confirmar)}
-            aria-describedby={errores.confirmar ? 'confirmar-error' : undefined}
             className={CAMPO_CLASES}
             placeholder="Repite tu contraseña"
           />
-          {errores.confirmar && (
-            <p id="confirmar-error" className="pl-1 text-sm font-medium text-danger">{errores.confirmar}</p>
-          )}
+          {errores.confirmar && <p className="pl-1 text-sm font-medium text-danger">{errores.confirmar}</p>}
         </div>
 
-        <div className="grid gap-3 pt-2 sm:grid-cols-2">
-          <Button
-            type="submit"
-            size="lg"
-            disabled={enviando}
-            className="order-1 w-full bg-brand-plum text-white hover:bg-brand-grape sm:order-2"
-          >
-            {enviando ? 'Registrando...' : 'Registrar'}
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            size="lg"
-            className="order-2 w-full border-brand-mauve bg-transparent text-brand-night hover:bg-brand-lilac/50 sm:order-1"
-          >
-            <Link href="/login">Cancelar</Link>
-          </Button>
-        </div>
+        <Button
+          type="submit"
+          size="lg"
+          disabled={enviando}
+          className="w-full bg-brand-plum text-white hover:bg-brand-grape"
+        >
+          {enviando ? 'Creando cuenta...' : 'Crear superusuario'}
+        </Button>
       </form>
     </AuthShell>
   );

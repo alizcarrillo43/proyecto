@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { NuevoArticuloDialog } from '@/components/articulos/nuevo-articulo-dialog';
+import { useSesion } from '@/components/session-provider';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -17,6 +18,8 @@ import { formatMXN } from '@/lib/format';
 
 export default function ArticulosPage() {
   const { articulos, cargando, error, recargar } = useArticulos();
+  const { perfil } = useSesion();
+  const puedeAgregar = perfil?.rol === 'superusuario';
   const [nuevoAbierto, setNuevoAbierto] = useState(false);
 
   return (
@@ -26,15 +29,17 @@ export default function ArticulosPage() {
           <h1 className="text-3xl font-bold tracking-tight text-brand-night">Artículos</h1>
           <p className="mt-1 text-brand-grape">Catálogo y existencias de la tienda.</p>
         </div>
-        <Button
-          type="button"
-          size="lg"
-          onClick={() => setNuevoAbierto(true)}
-          className="gap-2 bg-brand-plum text-white hover:bg-brand-grape"
-        >
-          <Plus className="h-5 w-5" aria-hidden />
-          Nuevo artículo
-        </Button>
+        {puedeAgregar && (
+          <Button
+            type="button"
+            size="lg"
+            onClick={() => setNuevoAbierto(true)}
+            className="gap-2 bg-brand-plum text-white hover:bg-brand-grape"
+          >
+            <Plus className="h-5 w-5" aria-hidden />
+            Nuevo artículo
+          </Button>
+        )}
       </header>
 
       {error ? (
@@ -94,11 +99,13 @@ export default function ArticulosPage() {
         </div>
       )}
 
-      <NuevoArticuloDialog
-        open={nuevoAbierto}
-        onOpenChange={setNuevoAbierto}
-        onCreado={() => void recargar()}
-      />
+      {puedeAgregar && (
+        <NuevoArticuloDialog
+          open={nuevoAbierto}
+          onOpenChange={setNuevoAbierto}
+          onCreado={() => void recargar()}
+        />
+      )}
     </div>
   );
 }

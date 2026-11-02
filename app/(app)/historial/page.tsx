@@ -1,3 +1,4 @@
+import { SoloSuperusuario } from '@/components/solo-superusuario';
 import {
   Table,
   TableBody,
@@ -10,6 +11,14 @@ import { formatMXN } from '@/lib/format';
 import { VENTAS_EJEMPLO } from '@/lib/sample-data';
 
 export default function HistorialPage() {
+  return (
+    <SoloSuperusuario>
+      <HistorialContenido />
+    </SoloSuperusuario>
+  );
+}
+
+function HistorialContenido() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
       <header>

@@ -3,11 +3,15 @@
   "functions": {
     "recuperar-contrasena": {
       "hasChanged": false,
-      "hash": "4a54332ba0c050bcbbf8a220a8538e3620a2594effe86e63f68a540d18c0efd4"
+      "hash": "9ca12d19c8884280d86b1a645b2532200368dddb97e2c1a0ba2afeb589e2edf7"
     },
-    "registro": {
+    "configuracion-inicial": {
       "hasChanged": false,
-      "hash": "cdac183cc71dc30873ef9a26dda42e22eb8762f66e1905580668d1314c665711"
+      "hash": "82a2c2ac00f5473ec1d3054f32d7124d055c6928a52fa6cbe40d75cd700570de"
+    },
+    "gestion-empleados": {
+      "hasChanged": false,
+      "hash": "c5bd5990e1286e4a021d94a11b7e489d47423e3cae4d20cefafa7e9123995ce0"
     }
   }
 }

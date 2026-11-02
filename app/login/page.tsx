@@ -97,12 +97,6 @@ export default function LoginPage() {
           {enviando ? 'Entrando...' : 'Continuar'}
         </Button>
 
-        <p className="text-center text-sm text-brand-grape">
-          ¿No tienes cuenta?{' '}
-          <Link href="/registro" className={ENLACE_CLASES}>
-            Registrarse
-          </Link>
-        </p>
       </form>
     </AuthShell>
   );

@@ -1,4 +1,7 @@
-[functions.registro]
+[functions.configuracion-inicial]
+verify_jwt = false
+
+[functions.gestion-empleados]
 verify_jwt = false
 
 [functions.recuperar-contrasena]

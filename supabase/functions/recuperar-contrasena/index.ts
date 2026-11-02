@@ -75,6 +75,7 @@ async function buscarUsuario(usuario: string) {
     .from("usuarios")
     .select("id, lada, telefono")
     .eq("usuario", usuario)
+    .eq("activo", true)
     .maybeSingle();
   if (error) throw error;
   return data;
@@ -175,6 +176,12 @@ async function restablecer(usuario: string, codigo: string, contrasena: string) 
     .update({ usado: true })
     .eq("id", fila.id);
   if (error) throw error;
+
+  const { error: errorPerfil } = await supabase
+    .from("usuarios")
+    .update({ debe_cambiar_contrasena: false })
+    .eq("id", perfil.id);
+  if (errorPerfil) throw errorPerfil;
 
   return json({ ok: true });
 }

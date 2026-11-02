@@ -11,7 +11,19 @@ export type Perfil = {
   id: string;
   nombre: string;
   usuario: string;
-  rol: 'vendedor' | 'administrador';
+  rol: 'superusuario' | 'empleado';
+  debe_cambiar_contrasena: boolean;
+};
+
+export type Empleado = {
+  id: string;
+  nombre: string;
+  usuario: string;
+  correo: string | null;
+  lada: string;
+  telefono: string;
+  activo: boolean;
+  debe_cambiar_contrasena: boolean;
 };
 
 export type LineaVenta = {

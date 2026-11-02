@@ -2,18 +2,33 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Footprints, House, LogOut, Package, Receipt, type LucideIcon } from 'lucide-react';
+import { Footprints, House, LogOut, Package, Receipt, Users, type LucideIcon } from 'lucide-react';
+import { useSesion } from '@/components/session-provider';
 import { cerrarSesion } from '@/lib/auth-api';
 import { cn } from '@/lib/utils';
+import type { Perfil } from '@/lib/types';
 
-const ITEMS_NAVEGACION: { href: string; etiqueta: string; icono: LucideIcon }[] = [
-  { href: '/ventas', etiqueta: 'Inicio', icono: House },
-  { href: '/historial', etiqueta: 'Ventas', icono: Receipt },
-  { href: '/articulos', etiqueta: 'Artículos', icono: Package },
+type ItemNavegacion = {
+  href: string;
+  etiqueta: string;
+  icono: LucideIcon;
+  roles: Perfil['rol'][];
+};
+
+const TODOS: Perfil['rol'][] = ['superusuario', 'empleado'];
+const SOLO_SUPERUSUARIO: Perfil['rol'][] = ['superusuario'];
+
+const ITEMS_NAVEGACION: ItemNavegacion[] = [
+  { href: '/ventas', etiqueta: 'Inicio', icono: House, roles: TODOS },
+  { href: '/historial', etiqueta: 'Ventas', icono: Receipt, roles: SOLO_SUPERUSUARIO },
+  { href: '/articulos', etiqueta: 'Artículos', icono: Package, roles: TODOS },
+  { href: '/empleados', etiqueta: 'Empleados', icono: Users, roles: SOLO_SUPERUSUARIO },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { perfil } = useSesion();
+  const items = ITEMS_NAVEGACION.filter((item) => perfil && item.roles.includes(perfil.rol));
 
   return (
     <>
@@ -26,7 +41,7 @@ export function AppSidebar() {
         </div>
 
         <nav aria-label="Menú principal" className="flex flex-col gap-2">
-          {ITEMS_NAVEGACION.map(({ href, etiqueta, icono: Icono }) => {
+          {items.map(({ href, etiqueta, icono: Icono }) => {
             const activo = pathname === href;
             return (
               <Link
@@ -61,7 +76,7 @@ export function AppSidebar() {
         aria-label="Menú principal"
         className="fixed inset-x-0 bottom-0 z-30 flex border-t border-brand-mauve/40 bg-brand-grape px-2 pb-[env(safe-area-inset-bottom)] md:hidden"
       >
-        {ITEMS_NAVEGACION.map(({ href, etiqueta, icono: Icono }) => {
+        {items.map(({ href, etiqueta, icono: Icono }) => {
           const activo = pathname === href;
           return (
             <Link
