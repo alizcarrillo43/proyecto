@@ -16,29 +16,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useArticulos } from '@/hooks/use-articulos';
-import { cambiarPausaModelo } from '@/lib/inventario-api';
+import { agruparModelos, cambiarPausaModelo } from '@/lib/inventario-api';
 import { formatMXN } from '@/lib/format';
 import type { Articulo, ModeloArticulo } from '@/lib/types';
-
-function agruparModelos(articulos: Articulo[]): ModeloArticulo[] {
-  const porCodigo = new Map<string, Articulo[]>();
-  for (const articulo of articulos) {
-    const grupo = porCodigo.get(articulo.codigo);
-    if (grupo) grupo.push(articulo);
-    else porCodigo.set(articulo.codigo, [articulo]);
-  }
-  return Array.from(porCodigo.values()).map((grupo) => {
-    const tallas = [...grupo].sort((a, b) => a.talla.localeCompare(b.talla, 'es', { numeric: true }));
-    const primera = tallas[0];
-    return {
-      codigo: primera.codigo,
-      descripcion: primera.descripcion,
-      precio: primera.precio,
-      pausado: tallas.some((talla) => !talla.activo),
-      tallas,
-    };
-  });
-}
 
 function TallasExistencias({
   tallas,

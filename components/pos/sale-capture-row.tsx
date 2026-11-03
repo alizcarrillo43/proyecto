@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type RefObject } from 'react';
+import { useMemo, useState, type RefObject } from 'react';
 import { ScanBarcode } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { agruparModelos } from '@/lib/inventario-api';
 import { formatMXN } from '@/lib/format';
 import type { Articulo } from '@/lib/types';
 
@@ -26,16 +27,25 @@ export function SaleCaptureRow({
   inputRef: RefObject<HTMLInputElement>;
 }) {
   const [codigo, setCodigo] = useState('');
+  const [modeloCodigo, setModeloCodigo] = useState('');
   const [articuloId, setArticuloId] = useState('');
-  const [tallasDelCodigo, setTallasDelCodigo] = useState<Articulo[]>([]);
+  const modelos = useMemo(() => agruparModelos(articulos), [articulos]);
+  const modeloElegido = modelos.find((modelo) => modelo.codigo === modeloCodigo) ?? null;
 
-  const opciones = tallasDelCodigo.length > 0 ? tallasDelCodigo : articulos;
+  function limpiar() {
+    setCodigo('');
+    setModeloCodigo('');
+    setArticuloId('');
+  }
 
   function agregar(articulo: Articulo) {
     onAgregar(articulo);
-    setCodigo('');
+    limpiar();
+  }
+
+  function elegirModelo(codigoModelo: string) {
+    setModeloCodigo(codigoModelo);
     setArticuloId('');
-    setTallasDelCodigo([]);
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -43,25 +53,28 @@ export function SaleCaptureRow({
     const codigoLimpio = codigo.trim();
 
     if (codigoLimpio) {
-      const coincidencias = articulos.filter((item) => item.codigo === codigoLimpio);
-      if (coincidencias.length === 0) {
+      const modelo = modelos.find((item) => item.codigo === codigoLimpio);
+      if (!modelo) {
         toast.error('Código no encontrado');
         return;
       }
-      if (coincidencias.length === 1) {
-        agregar(coincidencias[0]);
+      if (modelo.tallas.length === 1) {
+        agregar(modelo.tallas[0]);
         return;
       }
-      setTallasDelCodigo(coincidencias);
-      setArticuloId('');
       setCodigo('');
+      elegirModelo(modelo.codigo);
       toast.info('Este modelo tiene varias tallas. Elige la tuya.');
       return;
     }
 
-    const articulo = opciones.find((item) => item.id === articuloId);
-    if (!articulo) {
+    if (!modeloElegido) {
       toast.error('Escribe un código o elige un artículo');
+      return;
+    }
+    const articulo = modeloElegido.tallas.find((talla) => talla.id === articuloId);
+    if (!articulo) {
+      toast.error('Elige la talla');
       return;
     }
     agregar(articulo);
@@ -70,7 +83,7 @@ export function SaleCaptureRow({
   return (
     <form
       onSubmit={handleSubmit}
-      className="grid gap-4 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-brand-lilac sm:p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_auto] md:items-end"
+      className="grid gap-4 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-brand-lilac sm:p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_auto] md:items-end"
     >
       <div className="space-y-2">
         <Label htmlFor="codigo-barras" className="pl-1 text-brand-night">
@@ -99,7 +112,7 @@ export function SaleCaptureRow({
         <Label htmlFor="articulo" className="pl-1 text-brand-night">
           Artículo
         </Label>
-        <Select value={articuloId} onValueChange={setArticuloId}>
+        <Select value={modeloCodigo} onValueChange={elegirModelo}>
           <SelectTrigger
             id="articulo"
             className="h-12 rounded-full border-brand-lilac bg-brand-lilac/40 px-4 text-base focus:ring-brand-plum"
@@ -107,10 +120,34 @@ export function SaleCaptureRow({
             <SelectValue placeholder="Busca o elige un artículo" />
           </SelectTrigger>
           <SelectContent className="rounded-2xl">
-            {opciones.map((articulo) => (
-              <SelectItem key={articulo.id} value={articulo.id}>
-                {articulo.descripcion} · Talla {articulo.talla} ·{' '}
-                {formatMXN(articulo.precio)}
+            {modelos.map((modelo) => (
+              <SelectItem key={modelo.codigo} value={modelo.codigo}>
+                {modelo.descripcion} · {formatMXN(modelo.precio)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="talla" className="pl-1 text-brand-night">
+          Talla
+        </Label>
+        <Select
+          value={articuloId}
+          onValueChange={setArticuloId}
+          disabled={!modeloElegido}
+        >
+          <SelectTrigger
+            id="talla"
+            className="h-12 rounded-full border-brand-lilac bg-brand-lilac/40 px-4 text-base focus:ring-brand-plum"
+          >
+            <SelectValue placeholder="Elige la talla" />
+          </SelectTrigger>
+          <SelectContent className="rounded-2xl">
+            {modeloElegido?.tallas.map((talla) => (
+              <SelectItem key={talla.id} value={talla.id} disabled={talla.existencias <= 0}>
+                Talla {talla.talla} · {talla.existencias <= 0 ? 'Agotada' : `${talla.existencias} disp.`}
               </SelectItem>
             ))}
           </SelectContent>

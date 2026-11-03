@@ -1,6 +1,6 @@
 import { generarCodigoEAN13 } from '@/lib/codigo-barras';
 import { supabase } from '@/lib/supabase';
-import type { Articulo, LineaVenta } from '@/lib/types';
+import type { Articulo, LineaVenta, ModeloArticulo } from '@/lib/types';
 
 export type MetodoPago = 'efectivo' | 'tarjeta' | 'transferencia';
 
@@ -20,6 +20,26 @@ const MENSAJE_GENERICO_VENTA = 'No pudimos guardar la venta. Intenta de nuevo.';
 
 const COLUMNAS_ARTICULO = 'id, codigo, descripcion, talla, precio, existencias, activo';
 const INTENTOS_CODIGO = 3;
+
+export function agruparModelos(articulos: Articulo[]): ModeloArticulo[] {
+  const porCodigo = new Map<string, Articulo[]>();
+  for (const articulo of articulos) {
+    const grupo = porCodigo.get(articulo.codigo);
+    if (grupo) grupo.push(articulo);
+    else porCodigo.set(articulo.codigo, [articulo]);
+  }
+  return Array.from(porCodigo.values()).map((grupo) => {
+    const tallas = [...grupo].sort((a, b) => a.talla.localeCompare(b.talla, 'es', { numeric: true }));
+    const primera = tallas[0];
+    return {
+      codigo: primera.codigo,
+      descripcion: primera.descripcion,
+      precio: primera.precio,
+      pausado: tallas.some((talla) => !talla.activo),
+      tallas,
+    };
+  });
+}
 
 function aArticulo(fila: Record<string, unknown>): Articulo {
   return {
