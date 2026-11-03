@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ClearSaleDialog } from '@/components/pos/clear-sale-dialog';
+import { CajaInicialCard } from '@/components/pos/caja-inicial-card';
 import { CashWithdrawalDialog } from '@/components/pos/cash-withdrawal-dialog';
 import { PriceLookupDialog } from '@/components/pos/price-lookup-dialog';
 import { PosTopBar } from '@/components/pos/pos-top-bar';
@@ -130,6 +131,8 @@ export function PosScreen() {
             </button>
           </div>
         )}
+
+        <CajaInicialCard />
 
         <SaleCaptureRow
           articulos={articulosVendibles}
