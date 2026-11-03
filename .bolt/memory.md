@@ -6,12 +6,14 @@
 - UI is Spanish-language.
 - New registrations default to `vendedor`; the first admin is created manually.
 - Employees created with temporary passwords must change them before accessing Ventas.
+- Sales history is intended to support auditing by showing each sold item, the seller, and the sale timestamp rather than only sale totals.
 
 ## Brand personality & voice
 
 - Direct, instructional Spanish copy.
 - Authentication and form errors should explain the actionable cause rather than use a generic failure message.
 - Password-change guidance should clearly communicate requirements, confirmation state, and next action.
+- Sales and operational data should use concise, unambiguous labels for seller, item, quantity, price, folio, and date/time.
 
 ## Visual design & UX direction
 
@@ -22,6 +24,9 @@
 - Password recovery remains a three-step flow: identify user, enter SMS code, set a new password.
 - The temporary-password flow uses `/cambiar-contrasena`, with new-password and confirmation fields, a save action, and navigation to Ventas after success.
 - Password-change failures should distinguish mismatched fields from backend/authentication rejection and surface the useful reason inline or in a clear banner.
+- Sales history displays one row per sold article, including sale date/time, folio, article, size, quantity, price, and seller.
+- Sales history reads real persisted data and provides an `Actualizar` action to refresh the list.
+- The history table should remain legible when showing multiple line items from the same sale; repeated sale metadata is acceptable for row-level auditability.
 
 ## Decisions, constraints & rationale
 
@@ -32,7 +37,8 @@
 - Supabase provides the backend, database tables, and Row-Level Security for internal screens; unauthenticated users are redirected to login.
 - Registration and password-recovery server functions are deployed separately; Deno Edge Functions are excluded from TypeScript compilation.
 - SMS recovery depends on an external provider. Twilio is the current candidate but remains unconfigured, so recovery cannot send messages until credentials are supplied.
-- Type checking passed after adding the missing route; the complete employee flow and revised error behavior have not been verified in a real browser session.
+- Sales history uses `ventas` joined with `detalle_venta` and the seller relationship through `ventas.usuario_id`/`usuarios`; placeholder sample data was removed for this screen.
+- The sales-history query was verified with SQL and the project compiled successfully, but the updated history screen has not yet been verified in a real browser session.
 
 ## Open questions & assumptions
 
@@ -42,3 +48,4 @@
 - Confirm the procedure for bootstrapping the first admin user.
 - Mexican phone numbers are assumed to be 10 digits with the `+52` prefix.
 - The exact boundary between Supabase Auth and custom user tables remains unclear and should be confirmed against the implementation.
+- Verify the sales-history table in the browser, including refreshed data, seller names, timestamps, and behavior when a sale contains multiple detail lines.

@@ -36,10 +36,13 @@ export type LineaVenta = {
   existencias: number;
 };
 
-export type VentaHistorial = {
+export type LineaHistorial = {
+  id: string;
   folio: string;
   fecha: string;
   vendedor: string;
-  piezas: number;
-  total: number;
+  descripcion: string;
+  talla: string;
+  cantidad: number;
+  precioUnitario: number;
 };
