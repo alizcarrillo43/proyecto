@@ -2,6 +2,43 @@ import { generarCodigoEAN13 } from '@/lib/codigo-barras';
 import { supabase } from '@/lib/supabase';
 import type { Articulo, LineaVenta } from '@/lib/types';
 
+export type DatosEdicionArticulo = {
+  descripcion: string;
+  precio: number;
+  existencias: number;
+};
+
+export type ResultadoEdicion = { ok: true; articulo: Articulo } | { ok: false; error: string };
+
+export async function actualizarArticulo(
+  id: string,
+  datos: DatosEdicionArticulo,
+): Promise<ResultadoEdicion> {
+  const { data, error } = await supabase
+    .from('articulos')
+    .update(datos)
+    .eq('id', id)
+    .select(COLUMNAS_ARTICULO)
+    .maybeSingle();
+  if (error) return { ok: false, error: 'No pudimos guardar los cambios. Intenta de nuevo.' };
+  if (!data) return { ok: false, error: 'No encontramos el artículo. Actualiza la lista e intenta de nuevo.' };
+  return { ok: true, articulo: aArticulo(data) };
+}
+
+export type ResultadoEliminacion = { ok: true } | { ok: false; error: string };
+
+export async function eliminarArticulo(id: string): Promise<ResultadoEliminacion> {
+  const { error } = await supabase.from('articulos').delete().eq('id', id);
+  if (!error) return { ok: true };
+  if (error.code === '23503') {
+    return {
+      ok: false,
+      error: 'Este artículo ya tiene ventas registradas, por eso no se puede eliminar. Puedes dejar sus existencias en 0.',
+    };
+  }
+  return { ok: false, error: 'No pudimos eliminar el artículo. Intenta de nuevo.' };
+}
+
 export type MetodoPago = 'efectivo' | 'tarjeta' | 'transferencia';
 
 export type ResultadoVenta =

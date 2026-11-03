@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { EditarArticuloDialog } from '@/components/articulos/editar-articulo-dialog';
+import { EliminarArticuloDialog } from '@/components/articulos/eliminar-articulo-dialog';
 import { NuevoArticuloDialog } from '@/components/articulos/nuevo-articulo-dialog';
 import { useSesion } from '@/components/session-provider';
 import { Button } from '@/components/ui/button';
@@ -15,12 +17,15 @@ import {
 } from '@/components/ui/table';
 import { useArticulos } from '@/hooks/use-articulos';
 import { formatMXN } from '@/lib/format';
+import type { Articulo } from '@/lib/types';
 
 export default function ArticulosPage() {
   const { articulos, cargando, error, recargar } = useArticulos();
   const { perfil } = useSesion();
   const puedeAgregar = perfil?.rol === 'superusuario';
   const [nuevoAbierto, setNuevoAbierto] = useState(false);
+  const [articuloEditando, setArticuloEditando] = useState<Articulo | null>(null);
+  const [articuloEliminando, setArticuloEliminando] = useState<Articulo | null>(null);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
@@ -67,6 +72,9 @@ export default function ArticulosPage() {
                   <TableHead className="h-12 px-4 text-center text-brand-night">Número</TableHead>
                   <TableHead className="h-12 px-4 text-right text-brand-night">Precio</TableHead>
                   <TableHead className="h-12 px-4 text-right text-brand-night">Existencias</TableHead>
+                  {puedeAgregar && (
+                    <TableHead className="h-12 px-4 text-right text-brand-night">Acciones</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -91,6 +99,30 @@ export default function ArticulosPage() {
                         {articulo.existencias === 0 ? 'Agotado' : articulo.existencias}
                       </span>
                     </TableCell>
+                    {puedeAgregar && (
+                      <TableCell className="px-4 py-4">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setArticuloEditando(articulo)}
+                            className="gap-2 border-brand-mauve bg-white text-brand-night hover:bg-brand-lilac/40"
+                          >
+                            <Pencil className="h-4 w-4" aria-hidden />
+                            Editar
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setArticuloEliminando(articulo)}
+                            className="gap-2 border-danger/40 bg-white text-danger hover:bg-danger-soft"
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden />
+                            Eliminar
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -100,11 +132,27 @@ export default function ArticulosPage() {
       )}
 
       {puedeAgregar && (
-        <NuevoArticuloDialog
-          open={nuevoAbierto}
-          onOpenChange={setNuevoAbierto}
-          onCreado={() => void recargar()}
-        />
+        <>
+          <NuevoArticuloDialog
+            open={nuevoAbierto}
+            onOpenChange={setNuevoAbierto}
+            onCreado={() => void recargar()}
+          />
+          <EditarArticuloDialog
+            articulo={articuloEditando}
+            onOpenChange={(abierto) => {
+              if (!abierto) setArticuloEditando(null);
+            }}
+            onGuardado={() => void recargar()}
+          />
+          <EliminarArticuloDialog
+            articulo={articuloEliminando}
+            onOpenChange={(abierto) => {
+              if (!abierto) setArticuloEliminando(null);
+            }}
+            onEliminado={() => void recargar()}
+          />
+        </>
       )}
     </div>
   );
