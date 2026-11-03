@@ -27,29 +27,44 @@ export function SaleCaptureRow({
 }) {
   const [codigo, setCodigo] = useState('');
   const [articuloId, setArticuloId] = useState('');
+  const [tallasDelCodigo, setTallasDelCodigo] = useState<Articulo[]>([]);
+
+  const opciones = tallasDelCodigo.length > 0 ? tallasDelCodigo : articulos;
+
+  function agregar(articulo: Articulo) {
+    onAgregar(articulo);
+    setCodigo('');
+    setArticuloId('');
+    setTallasDelCodigo([]);
+  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const codigoLimpio = codigo.trim();
 
     if (codigoLimpio) {
-      const articulo = articulos.find((item) => item.codigo === codigoLimpio);
-      if (!articulo) {
+      const coincidencias = articulos.filter((item) => item.codigo === codigoLimpio);
+      if (coincidencias.length === 0) {
         toast.error('Código no encontrado');
         return;
       }
-      onAgregar(articulo);
+      if (coincidencias.length === 1) {
+        agregar(coincidencias[0]);
+        return;
+      }
+      setTallasDelCodigo(coincidencias);
+      setArticuloId('');
       setCodigo('');
+      toast.info('Este modelo tiene varias tallas. Elige la tuya.');
       return;
     }
 
-    const articulo = articulos.find((item) => item.id === articuloId);
+    const articulo = opciones.find((item) => item.id === articuloId);
     if (!articulo) {
       toast.error('Escribe un código o elige un artículo');
       return;
     }
-    onAgregar(articulo);
-    setArticuloId('');
+    agregar(articulo);
   }
 
   return (
@@ -92,7 +107,7 @@ export function SaleCaptureRow({
             <SelectValue placeholder="Busca o elige un artículo" />
           </SelectTrigger>
           <SelectContent className="rounded-2xl">
-            {articulos.map((articulo) => (
+            {opciones.map((articulo) => (
               <SelectItem key={articulo.id} value={articulo.id}>
                 {articulo.descripcion} · Talla {articulo.talla} ·{' '}
                 {formatMXN(articulo.precio)}

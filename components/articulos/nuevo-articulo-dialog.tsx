@@ -142,19 +142,24 @@ export function NuevoArticuloDialog({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="grid gap-3">
-              {creados.map((articulo) => (
-                <div
-                  key={articulo.id}
-                  className="flex flex-col items-center gap-2 rounded-2xl bg-white p-4 ring-1 ring-brand-lilac"
-                >
-                  <p className="text-sm font-semibold text-brand-night">
-                    Número {articulo.talla} · {articulo.existencias} pares
-                  </p>
-                  <CodigoDeBarras codigo={articulo.codigo} />
-                </div>
-              ))}
+            <div className="flex flex-col items-center gap-3 rounded-2xl bg-white p-6 ring-1 ring-brand-lilac">
+              <CodigoDeBarras codigo={creados[0].codigo} />
+              <p className="text-center text-sm text-brand-grape">
+                Un solo código para todas las numeraciones de este modelo.
+              </p>
             </div>
+
+            <ul className="grid gap-2">
+              {creados.map((articulo) => (
+                <li
+                  key={articulo.id}
+                  className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 text-sm ring-1 ring-brand-lilac"
+                >
+                  <span className="font-semibold text-brand-night">Número {articulo.talla}</span>
+                  <span className="tabular-nums text-brand-grape">{articulo.existencias} pares</span>
+                </li>
+              ))}
+            </ul>
 
             <DialogFooter className="grid grid-cols-2 gap-3 sm:flex sm:justify-end">
               <Button

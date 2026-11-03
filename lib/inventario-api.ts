@@ -55,9 +55,10 @@ export type ResultadoAlta = { ok: true; articulos: Articulo[] } | { ok: false; e
 
 export async function crearArticulos(datos: DatosArticulo[]): Promise<ResultadoAlta> {
   for (let intento = 0; intento < INTENTOS_CODIGO; intento++) {
+    const codigo = generarCodigoEAN13();
     const { data, error } = await supabase
       .from('articulos')
-      .insert(datos.map((fila) => ({ ...fila, codigo: generarCodigoEAN13() })))
+      .insert(datos.map((fila) => ({ ...fila, codigo })))
       .select(COLUMNAS_ARTICULO);
     if (!error && Array.isArray(data)) return { ok: true, articulos: data.map(aArticulo) };
     if (error?.code !== '23505') {
