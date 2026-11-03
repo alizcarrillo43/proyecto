@@ -3,17 +3,17 @@
 ## Product intent & audience
 
 - Internal Spanish-language inventory and sales app for Mexican employees.
-- Employees consult inventory, register sales, and consult cash totals; the jefe/superuser manages stock and daily cash setup.
+- Employees consult inventory, register sales, consult cash totals, and receive a customer-facing proof of purchase; the jefe/superuser manages stock and daily cash setup.
 - Inventory models represent articles with one shared model-level code and multiple shoe sizes, each with its own stock.
 - Sales history must remain auditable and preserve sold-item details.
 
 ## Brand personality & voice
 
 - Direct, instructional Spanish copy suited to operational workflows.
-- Stock, cash, and availability states should be immediately understandable.
+- Stock, cash, availability, and sale completion states should be immediately understandable.
 - Error messages should explain the cause and next action.
 - Destructive or state-changing actions should clarify their scope and historical impact.
-- Financial labels should distinguish clearly between opening cash, sales totals, cash cuts, and withdrawals.
+- Financial labels should distinguish clearly between opening cash, sales totals, cash cuts, withdrawals, and ticket totals.
 
 ## Visual design & UX direction
 
@@ -27,10 +27,12 @@
 - Article-level pause/delete actions appear under the description, not once per size.
 - Sales product capture uses two stages: select an article/model with its price, then select an available size.
 - Sold-out sizes are visibly disabled; scanning or entering a multi-size model code should go directly to size selection.
+- After a successful sale, show an on-screen ticket styled as a clear receipt. It includes the sale folio, date/time, seller, each sold article, size, quantity, price, line amount, and total.
+- The ticket uses the just-completed sale data and remains visible until `Nueva venta` is selected, which closes it and resets capture for the next customer.
 - Cash information is accessed from a dedicated `Caja` page available to both roles, not from the `Inicio`/Ventas page.
 - The Caja page should clearly present the current cash total/opening amount and latest update information. Employees can consult it; only the superuser sees editing controls.
 - Cash entry should use a clear monetary input and make same-day correction behavior apparent.
-- Preserve the existing responsive layout and session-aware navigation when adding Caja.
+- Preserve the existing responsive layout and session-aware navigation when adding Caja or the sales ticket.
 
 ## Decisions, constraints & rationale
 
@@ -41,6 +43,8 @@
 - Historical sales must not be lost when an article is deleted; sold descriptions, sizes, and prices remain available in history.
 - Supabase remains the data/authentication layer with RLS and role-based access.
 - Sales lookup and capture separate model selection from explicit size selection; existing pricing behavior and the remainder of the sale flow are preserved.
+- On `Cobrar`, the completed sale response/data is used to render the ticket immediately; the displayed time currently comes from the client device rather than the server.
+- The ticket is a post-sale on-screen receipt; browser validation and any printing/download workflow are not yet established.
 - Daily opening cash is persisted in a dedicated database record and survives reloads. The current implementation supports reading and same-day insert/update behavior.
 - Only the superuser may write opening cash; employees have read-only access. This is enforced through database permissions as well as the UI.
 - Opening cash is intentionally separate from cash cuts and withdrawals; those workflows were not changed.
@@ -48,11 +52,13 @@
 - The Caja menu item and page are visible to employees and superuser; editing remains superuser-only.
 - Recent inventory changes touched `app/(app)/articulos/page.tsx`, `components/articulos/eliminar-articulo-dialog.tsx`, `lib/inventario-api.ts`, and `lib/types.ts`.
 - Production build remains blocked when database URL/key environment variables are absent; this is an environment issue not yet established as a code regression.
-- Type checking for the recent Caja/navigation change passed; browser validation has not yet been completed.
+- Type checking for the recent Caja and ticket changes passed; browser validation has not yet been completed.
 
 ## Open questions & assumptions
 
-- Verify the Caja page in a browser for superuser and employee sessions, including visibility, read-only employee behavior, reload persistence, and same-day correction.
+- Verify the ticket in a browser after successful sales, including multiple articles, sizes, quantities, prices, totals, folio, seller, date/time, and the `Nueva venta` reset.
+- Decide whether the ticket should support printing, downloading, sharing, or remain screen-only.
+- Decide whether receipt date/time should use server time for consistency and auditability instead of the client device clock.
 - Confirm whether “total en caja” means opening cash only or a calculated current cash total including sales, cuts, or withdrawals; current implementation appears centered on the persisted opening amount.
 - Confirm the desired wording and behavior when no opening cash has been recorded, including whether sales should be allowed.
 - Define whether opening cash is one record per calendar day and which timezone determines the day boundary.

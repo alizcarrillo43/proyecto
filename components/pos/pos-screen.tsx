@@ -3,13 +3,14 @@
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ClearSaleDialog } from '@/components/pos/clear-sale-dialog';
-import { CajaInicialCard } from '@/components/caja/caja-inicial-card';
 import { CashWithdrawalDialog } from '@/components/pos/cash-withdrawal-dialog';
 import { PriceLookupDialog } from '@/components/pos/price-lookup-dialog';
 import { PosTopBar } from '@/components/pos/pos-top-bar';
 import { SaleCaptureRow } from '@/components/pos/sale-capture-row';
 import { SaleSummary } from '@/components/pos/sale-summary';
 import { SaleTable } from '@/components/pos/sale-table';
+import { TicketVentaDialog, type TicketVenta } from '@/components/pos/ticket-venta-dialog';
+import { useSesion } from '@/components/session-provider';
 import { useArticulos } from '@/hooks/use-articulos';
 import { formatMXN } from '@/lib/format';
 import { registrarVenta } from '@/lib/inventario-api';
@@ -37,6 +38,8 @@ export function PosScreen() {
   const [confirmarVaciado, setConfirmarVaciado] = useState(false);
   const [consultaAbierta, setConsultaAbierta] = useState(false);
   const [retiroAbierto, setRetiroAbierto] = useState(false);
+  const [ticket, setTicket] = useState<TicketVenta | null>(null);
+  const { perfil } = useSesion();
   const codigoRef = useRef<HTMLInputElement>(null);
 
   const piezas = lineas.reduce((suma, linea) => suma + linea.cantidad, 0);
@@ -93,8 +96,9 @@ export function PosScreen() {
 
   async function cobrar() {
     if (cobrando || lineas.length === 0) return;
+    const lineasVendidas = lineas;
     setCobrando(true);
-    const resultado = await registrarVenta(lineas, 'efectivo');
+    const resultado = await registrarVenta(lineasVendidas, 'efectivo');
     setCobrando(false);
 
     if (!resultado.ok) {
@@ -103,9 +107,20 @@ export function PosScreen() {
       return;
     }
 
-    toast.success(`Venta ${resultado.folio} cobrada por ${formatMXN(resultado.total)}`);
+    setTicket({
+      folio: resultado.folio,
+      fecha: new Date(),
+      vendedor: perfil?.nombre ?? 'Vendedor',
+      lineas: lineasVendidas,
+      total: resultado.total,
+    });
     setLineas([]);
     void recargar();
+  }
+
+  function cerrarTicket(abierto: boolean) {
+    if (abierto) return;
+    setTicket(null);
     codigoRef.current?.focus();
   }
 
@@ -168,6 +183,7 @@ export function PosScreen() {
         onOpenChange={setConfirmarVaciado}
         onConfirmar={vaciarVenta}
       />
+      <TicketVentaDialog ticket={ticket} onOpenChange={cerrarTicket} />
     </>
   );
 }
