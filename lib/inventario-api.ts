@@ -14,6 +14,8 @@ const MENSAJES_VENTA: Record<string, string> = {
   cantidad_invalida: 'Revisa las cantidades de la venta.',
   venta_vacia: 'Agrega artículos antes de cobrar.',
   metodo_invalido: 'El método de pago no es válido.',
+  sin_turno_abierto: 'No tienes un turno abierto. Pide al encargado que lo abra para poder vender.',
+  dia_cerrado: 'El corte de hoy ya está cerrado, por eso no se pueden registrar más ventas hoy.',
 };
 
 const MENSAJE_GENERICO_VENTA = 'No pudimos guardar la venta. Intenta de nuevo.';

@@ -1,16 +1,22 @@
 import { Button } from '@/components/ui/button';
+import { MetodoPagoSelector } from '@/components/pos/metodo-pago-selector';
 import { formatMXN } from '@/lib/format';
+import type { MetodoPago } from '@/lib/inventario-api';
 
 export function SaleSummary({
   piezas,
   total,
   hayLineas,
+  metodoPago,
+  onCambiarMetodo,
   onCobrar,
   onCancelar,
 }: {
   piezas: number;
   total: number;
   hayLineas: boolean;
+  metodoPago: MetodoPago;
+  onCambiarMetodo: (metodo: MetodoPago) => void;
   onCobrar: () => void;
   onCancelar: () => void;
 }) {
@@ -33,6 +39,8 @@ export function SaleSummary({
           </p>
         </div>
       </div>
+
+      <MetodoPagoSelector valor={metodoPago} onCambiar={onCambiarMetodo} />
 
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
         <Button

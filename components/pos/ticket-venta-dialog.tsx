@@ -2,7 +2,9 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { etiquetaMetodoPago } from '@/components/pos/metodo-pago-selector';
 import { formatMXN } from '@/lib/format';
+import type { MetodoPago } from '@/lib/inventario-api';
 import type { LineaVenta } from '@/lib/types';
 
 export type TicketVenta = {
@@ -11,6 +13,7 @@ export type TicketVenta = {
   vendedor: string;
   lineas: LineaVenta[];
   total: number;
+  metodoPago: MetodoPago;
 };
 
 const formatoFecha = new Intl.DateTimeFormat('es-MX', {
@@ -47,7 +50,7 @@ export function TicketVentaDialog({
                 <dt className="font-semibold text-brand-grape">Vendedor</dt>
                 <dd className="text-right">{ticket.vendedor}</dd>
                 <dt className="font-semibold text-brand-grape">Pago</dt>
-                <dd className="text-right">Efectivo</dd>
+                <dd className="text-right">{etiquetaMetodoPago(ticket.metodoPago)}</dd>
               </dl>
 
               <div className="my-4 border-t border-dashed border-brand-mauve" />

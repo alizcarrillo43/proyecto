@@ -10,10 +10,12 @@ import { SaleCaptureRow } from '@/components/pos/sale-capture-row';
 import { SaleSummary } from '@/components/pos/sale-summary';
 import { SaleTable } from '@/components/pos/sale-table';
 import { TicketVentaDialog, type TicketVenta } from '@/components/pos/ticket-venta-dialog';
+import { TurnoRequeridoAviso } from '@/components/turnos/turno-requerido-aviso';
 import { useSesion } from '@/components/session-provider';
 import { useArticulos } from '@/hooks/use-articulos';
+import { useTurnoAbierto } from '@/hooks/use-turno-abierto';
 import { formatMXN } from '@/lib/format';
-import { registrarVenta } from '@/lib/inventario-api';
+import { registrarVenta, type MetodoPago } from '@/lib/inventario-api';
 import type { Articulo, LineaVenta } from '@/lib/types';
 
 const MENSAJE_SIN_EXISTENCIAS = 'No hay más existencias de este artículo';
@@ -39,7 +41,10 @@ export function PosScreen() {
   const [consultaAbierta, setConsultaAbierta] = useState(false);
   const [retiroAbierto, setRetiroAbierto] = useState(false);
   const [ticket, setTicket] = useState<TicketVenta | null>(null);
+  const [metodoPago, setMetodoPago] = useState<MetodoPago>('efectivo');
   const { perfil } = useSesion();
+  const turno = useTurnoAbierto(perfil?.rol === 'empleado');
+  const avisoTurno = perfil?.rol === 'empleado' && turno.estado !== 'abierto' ? turno.estado : null;
   const codigoRef = useRef<HTMLInputElement>(null);
 
   const piezas = lineas.reduce((suma, linea) => suma + linea.cantidad, 0);
@@ -98,7 +103,8 @@ export function PosScreen() {
     if (cobrando || lineas.length === 0) return;
     const lineasVendidas = lineas;
     setCobrando(true);
-    const resultado = await registrarVenta(lineasVendidas, 'efectivo');
+    const metodoVendido = metodoPago;
+    const resultado = await registrarVenta(lineasVendidas, metodoVendido);
     setCobrando(false);
 
     if (!resultado.ok) {
@@ -113,6 +119,7 @@ export function PosScreen() {
       vendedor: perfil?.nombre ?? 'Vendedor',
       lineas: lineasVendidas,
       total: resultado.total,
+      metodoPago: metodoVendido,
     });
     setLineas([]);
     void recargar();
@@ -137,6 +144,11 @@ export function PosScreen() {
         onRetirarEfectivo={() => setRetiroAbierto(true)}
       />
 
+      {avisoTurno ? (
+        <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+          <TurnoRequeridoAviso estado={avisoTurno} onReintentar={() => void turno.recargar()} />
+        </div>
+      ) : (
       <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
         {errorArticulos && (
           <div role="alert" className="flex items-center justify-between gap-4 rounded-2xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
@@ -163,10 +175,13 @@ export function PosScreen() {
           piezas={piezas}
           total={total}
           hayLineas={lineas.length > 0}
+          metodoPago={metodoPago}
+          onCambiarMetodo={setMetodoPago}
           onCobrar={cobrar}
           onCancelar={() => setConfirmarVaciado(true)}
         />
       </div>
+      )}
 
       <PriceLookupDialog
         open={consultaAbierta}
