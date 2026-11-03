@@ -10,6 +10,8 @@ const MENSAJES_ERROR: Record<string, string> = {
   usuario_existe: 'Ese usuario ya está registrado. Elige otro.',
   telefono_existe: 'Ese teléfono ya tiene una cuenta registrada.',
   datos_invalidos: 'Revisa los datos del formulario.',
+  contrasena_igual_anterior: 'La nueva contraseña debe ser distinta a la contraseña temporal.',
+  contrasena_debil: 'La contraseña es muy débil. Usa al menos 8 caracteres.',
   configuracion_no_disponible: 'La configuración inicial ya se completó.',
   no_autenticado: 'Tu sesión venció. Vuelve a iniciar sesión.',
   no_autorizado: 'No tienes permiso para hacer esta acción.',
@@ -122,7 +124,14 @@ export function restablecerContrasena(usuario: string, codigo: string, contrasen
 
 export async function cambiarContrasenaPropia(nueva: string): Promise<ResultadoAuth> {
   const { error } = await supabase.auth.updateUser({ password: nueva });
-  if (error) return { ok: false, error: 'datos_invalidos', campo: 'contrasena' };
+  if (error) {
+    const mensaje = error.message.toLowerCase();
+    if (mensaje.includes('different')) return { ok: false, error: 'contrasena_igual_anterior', campo: 'contrasena' };
+    if (mensaje.includes('weak') || mensaje.includes('least') || mensaje.includes('short')) {
+      return { ok: false, error: 'contrasena_debil', campo: 'contrasena' };
+    }
+    return { ok: false, error: 'datos_invalidos', campo: 'contrasena' };
+  }
 
   const { error: errorMarca } = await supabase.rpc('completar_cambio_contrasena');
   if (errorMarca) return { ok: false, error: 'sin_conexion' };
