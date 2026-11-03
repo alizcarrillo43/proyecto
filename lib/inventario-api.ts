@@ -2,43 +2,6 @@ import { generarCodigoEAN13 } from '@/lib/codigo-barras';
 import { supabase } from '@/lib/supabase';
 import type { Articulo, LineaVenta } from '@/lib/types';
 
-export type DatosEdicionArticulo = {
-  descripcion: string;
-  precio: number;
-  existencias: number;
-};
-
-export type ResultadoEdicion = { ok: true; articulo: Articulo } | { ok: false; error: string };
-
-export async function actualizarArticulo(
-  id: string,
-  datos: DatosEdicionArticulo,
-): Promise<ResultadoEdicion> {
-  const { data, error } = await supabase
-    .from('articulos')
-    .update(datos)
-    .eq('id', id)
-    .select(COLUMNAS_ARTICULO)
-    .maybeSingle();
-  if (error) return { ok: false, error: 'No pudimos guardar los cambios. Intenta de nuevo.' };
-  if (!data) return { ok: false, error: 'No encontramos el artículo. Actualiza la lista e intenta de nuevo.' };
-  return { ok: true, articulo: aArticulo(data) };
-}
-
-export type ResultadoEliminacion = { ok: true } | { ok: false; error: string };
-
-export async function eliminarArticulo(id: string): Promise<ResultadoEliminacion> {
-  const { error } = await supabase.from('articulos').delete().eq('id', id);
-  if (!error) return { ok: true };
-  if (error.code === '23503') {
-    return {
-      ok: false,
-      error: 'Este artículo ya tiene ventas registradas, por eso no se puede eliminar. Puedes dejar sus existencias en 0.',
-    };
-  }
-  return { ok: false, error: 'No pudimos eliminar el artículo. Intenta de nuevo.' };
-}
-
 export type MetodoPago = 'efectivo' | 'tarjeta' | 'transferencia';
 
 export type ResultadoVenta =
@@ -55,7 +18,7 @@ const MENSAJES_VENTA: Record<string, string> = {
 
 const MENSAJE_GENERICO_VENTA = 'No pudimos guardar la venta. Intenta de nuevo.';
 
-const COLUMNAS_ARTICULO = 'id, codigo, descripcion, talla, precio, existencias';
+const COLUMNAS_ARTICULO = 'id, codigo, descripcion, talla, precio, existencias, activo';
 const INTENTOS_CODIGO = 3;
 
 function aArticulo(fila: Record<string, unknown>): Articulo {
@@ -66,6 +29,7 @@ function aArticulo(fila: Record<string, unknown>): Articulo {
     talla: String(fila.talla),
     precio: Number(fila.precio),
     existencias: Number(fila.existencias),
+    activo: Boolean(fila.activo),
   };
 }
 
@@ -87,29 +51,70 @@ export type DatosArticulo = {
   existencias: number;
 };
 
-export type ResultadoAlta = { ok: true; articulo: Articulo } | { ok: false; error: string };
+export type ResultadoAlta = { ok: true; articulos: Articulo[] } | { ok: false; error: string };
 
-export async function crearArticulo(datos: DatosArticulo): Promise<ResultadoAlta> {
+export async function crearArticulos(datos: DatosArticulo[]): Promise<ResultadoAlta> {
   for (let intento = 0; intento < INTENTOS_CODIGO; intento++) {
     const { data, error } = await supabase
       .from('articulos')
-      .insert({ ...datos, codigo: generarCodigoEAN13() })
-      .select(COLUMNAS_ARTICULO)
-      .single();
-    if (!error && data) return { ok: true, articulo: aArticulo(data) };
+      .insert(datos.map((fila) => ({ ...fila, codigo: generarCodigoEAN13() })))
+      .select(COLUMNAS_ARTICULO);
+    if (!error && Array.isArray(data)) return { ok: true, articulos: data.map(aArticulo) };
     if (error?.code !== '23505') {
-      return { ok: false, error: 'No pudimos guardar el artículo. Intenta de nuevo.' };
+      return { ok: false, error: 'No pudimos guardar los artículos. Intenta de nuevo.' };
     }
   }
   return { ok: false, error: 'No pudimos generar un código de barras único. Intenta de nuevo.' };
 }
 
+export type DatosEdicionArticulo = {
+  descripcion: string;
+  precio: number;
+  existencias: number;
+};
+
+export type ResultadoEdicion = { ok: true; articulo: Articulo } | { ok: false; error: string };
+
+async function actualizarCampos(
+  id: string,
+  campos: Partial<DatosEdicionArticulo> | { activo: boolean },
+): Promise<ResultadoEdicion> {
+  const { data, error } = await supabase
+    .from('articulos')
+    .update(campos)
+    .eq('id', id)
+    .select(COLUMNAS_ARTICULO)
+    .maybeSingle();
+  if (error) return { ok: false, error: 'No pudimos guardar los cambios. Intenta de nuevo.' };
+  if (!data) return { ok: false, error: 'No encontramos el artículo. Actualiza la lista e intenta de nuevo.' };
+  return { ok: true, articulo: aArticulo(data) };
+}
+
+export function actualizarArticulo(id: string, datos: DatosEdicionArticulo): Promise<ResultadoEdicion> {
+  return actualizarCampos(id, datos);
+}
+
+export function cambiarPausaArticulo(id: string, activo: boolean): Promise<ResultadoEdicion> {
+  return actualizarCampos(id, { activo });
+}
+
+export type ResultadoEliminacion = { ok: true } | { ok: false; error: string };
+
+export async function eliminarArticulo(id: string): Promise<ResultadoEliminacion> {
+  const { error } = await supabase.from('articulos').delete().eq('id', id);
+  if (error) return { ok: false, error: 'No pudimos eliminar el artículo. Intenta de nuevo.' };
+  return { ok: true };
+}
+
 function mensajeDeVenta(mensaje: string, lineas: LineaVenta[]) {
-  if (mensaje.startsWith('sin_existencias:')) {
-    const codigo = mensaje.slice('sin_existencias:'.length);
-    const linea = lineas.find((item) => item.codigo === codigo);
-    const nombre = linea ? linea.descripcion : 'uno de los artículos';
+  const [clave, codigo] = mensaje.split(':');
+  const linea = lineas.find((item) => item.codigo === codigo);
+  const nombre = linea ? linea.descripcion : 'uno de los artículos';
+  if (clave === 'sin_existencias') {
     return `No hay suficientes existencias de ${nombre}. Ajusta la cantidad e intenta de nuevo.`;
+  }
+  if (clave === 'articulo_pausado') {
+    return `${nombre} está en pausa y no se puede vender. Quítalo de la venta para continuar.`;
   }
   return MENSAJES_VENTA[mensaje] ?? MENSAJE_GENERICO_VENTA;
 }

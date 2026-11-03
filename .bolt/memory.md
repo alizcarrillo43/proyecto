@@ -2,18 +2,18 @@
 
 ## Product intent & audience
 
-- Internal business app for Mexican employees, with authentication, registration, password recovery, and role-based access.
+- Internal business app for Mexican employees, with authentication, registration, password recovery, role-based access, inventory, sales, and audit history.
 - UI is Spanish-language.
-- New registrations default to `vendedor`; the first admin is created manually.
+- Inventory supports shoe models with multiple sizes and per-size stock quantities.
 - Employees created with temporary passwords must change them before accessing Ventas.
-- Sales history is intended to support auditing by showing each sold item, the seller, and the sale timestamp rather than only sale totals.
+- Sales history is intended to preserve auditable line-item details, including seller, item, size, quantity, price, folio, and timestamp.
 
 ## Brand personality & voice
 
 - Direct, instructional Spanish copy.
-- Authentication and form errors should explain the actionable cause rather than use a generic failure message.
-- Password-change guidance should clearly communicate requirements, confirmation state, and next action.
-- Sales and operational data should use concise, unambiguous labels for seller, item, quantity, price, folio, and date/time.
+- Form and operational errors should explain the actionable cause.
+- Inventory status labels should be concise and unambiguous, especially availability and paused-sale states.
+- Destructive actions should clarify whether historical sales data is retained.
 
 ## Visual design & UX direction
 
@@ -22,30 +22,40 @@
 - Authenticated screens use the existing session-aware layout and `AuthShell`.
 - Desktop navigation uses a sidebar; mobile navigation uses a bottom bar with logout.
 - Password recovery remains a three-step flow: identify user, enter SMS code, set a new password.
-- The temporary-password flow uses `/cambiar-contrasena`, with new-password and confirmation fields, a save action, and navigation to Ventas after success.
-- Password-change failures should distinguish mismatched fields from backend/authentication rejection and surface the useful reason inline or in a clear banner.
-- Sales history displays one row per sold article, including sale date/time, folio, article, size, quantity, price, and seller.
-- Sales history reads real persisted data and provides an `Actualizar` action to refresh the list.
-- The history table should remain legible when showing multiple line items from the same sale; repeated sale metadata is acceptable for row-level auditability.
+- Temporary-password changes use `/cambiar-contrasena` and route successfully to Ventas.
+- Sales history displays one row per sold article and remains legible for multi-line sales.
+- The article-management UI now supports:
+  - Creating one model with multiple size entries and quantities in a single flow.
+  - Generating a barcode/code per size entry.
+  - Deleting articles even when historical sales exist.
+  - Pausing and resuming sale availability with a pause/play icon.
+  - Showing a visible `En pausa` status.
+- Paused articles should not appear in Ventas and should be rejected by the sale operation if submitted through stale UI or another client.
+- Article deletion is expected to preserve historical sales details rather than erase audit records.
 
 ## Decisions, constraints & rationale
 
-- The employee login 404 was caused by redirecting to `/cambiar-contrasena` before that route existed; the route now exists and can use the root layout’s `RequireSession` guard.
-- A successful temporary-password change sends the employee to Ventas.
-- The generic “Revise los datos del formulario y las contraseñas si coinciden” response was traced to broad Supabase error handling. Error mapping was updated to expose the actual reason.
-- Supabase may reject a new password that is identical to the temporary password; the employee must use a different password.
-- Supabase provides the backend, database tables, and Row-Level Security for internal screens; unauthenticated users are redirected to login.
+- The temporary-password route exists because redirecting employees there previously caused a 404; it uses the root layout’s session guard.
+- Supabase provides authentication, database tables, and Row-Level Security for internal screens; unauthenticated users are redirected to login.
 - Registration and password-recovery server functions are deployed separately; Deno Edge Functions are excluded from TypeScript compilation.
-- SMS recovery depends on an external provider. Twilio is the current candidate but remains unconfigured, so recovery cannot send messages until credentials are supplied.
-- Sales history uses `ventas` joined with `detalle_venta` and the seller relationship through `ventas.usuario_id`/`usuarios`; placeholder sample data was removed for this screen.
-- The sales-history query was verified with SQL and the project compiled successfully, but the updated history screen has not yet been verified in a real browser session.
+- SMS recovery depends on an external provider; Twilio remains a candidate but is not configured.
+- Sales history uses `ventas` joined with `detalle_venta` and seller data through `ventas.usuario_id`/`usuarios`; placeholder data was removed.
+- Article deletion was changed to avoid losing historical sales. The exact implementation preserves the original sold description, size, and price in sales history.
+- Sale availability is controlled with a persisted pause state; pausing affects current sale discovery and validation without deleting inventory data.
+- Multi-size article creation captures model-level information once and records separate size/quantity entries.
+- Type checking passes after the inventory changes.
+- The production build currently fails across pages because database environment configuration appears to be missing during build; this has not been established as a code regression.
+- The updated inventory and sales behavior has not yet been verified in a real browser session.
 
 ## Open questions & assumptions
 
-- Test the full employee flow with a real temporary-password account, including a new password distinct from the temporary one and a mismatched confirmation.
-- Confirm the exact Supabase error variants and ensure each is translated into useful Spanish feedback.
-- Twilio account SID, auth token, and sender number remain pending; confirm whether Twilio is the preferred provider.
-- Confirm the procedure for bootstrapping the first admin user.
+- Clarify the intended meaning of “eliminarlo de la ventana de ventas”: current implementation interprets the request as preserving sales history, while paused articles are removed from active Ventas.
+- Verify deletion behavior with an article that has existing sales, including history rendering after deletion and any foreign-key/RLS edge cases.
+- Verify pausing/resuming in the browser, including stale sale forms and direct server-side sale attempts.
+- Verify multi-size creation, stock counts, generated codes, editing, and validation for duplicate or invalid sizes.
+- Resolve missing database environment variables and rerun a production build.
+- Confirm exact Supabase error variants and useful Spanish translations for password and inventory operations.
+- Twilio credentials and preferred SMS provider remain pending.
+- Confirm the first-admin bootstrapping procedure.
 - Mexican phone numbers are assumed to be 10 digits with the `+52` prefix.
-- The exact boundary between Supabase Auth and custom user tables remains unclear and should be confirmed against the implementation.
-- Verify the sales-history table in the browser, including refreshed data, seller names, timestamps, and behavior when a sale contains multiple detail lines.
+- The boundary between Supabase Auth and custom user tables remains unclear and should be confirmed against the implementation.

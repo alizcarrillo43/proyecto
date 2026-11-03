@@ -52,7 +52,7 @@ export function EliminarArticuloDialog({
           <DialogTitle className="text-2xl font-bold text-brand-night">Eliminar artículo</DialogTitle>
           <DialogDescription className="text-brand-grape">
             {articulo
-              ? `Se eliminará ${articulo.descripcion}, talla ${articulo.talla}, con ${articulo.existencias} pares en existencias. Esta acción no se puede deshacer.`
+              ? `Se eliminará ${articulo.descripcion}, talla ${articulo.talla}, con ${articulo.existencias} pares en existencias. Las ventas anteriores seguirán en el historial. Esta acción no se puede deshacer.`
               : ''}
           </DialogDescription>
         </DialogHeader>

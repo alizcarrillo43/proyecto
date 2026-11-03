@@ -30,6 +30,7 @@ function crearLinea(articulo: Articulo, cantidad = 1): LineaVenta {
 
 export function PosScreen() {
   const { articulos, error: errorArticulos, recargar } = useArticulos();
+  const articulosVendibles = articulos.filter((articulo) => articulo.activo);
   const [lineas, setLineas] = useState<LineaVenta[]>([]);
   const [cobrando, setCobrando] = useState(false);
   const [confirmarVaciado, setConfirmarVaciado] = useState(false);
@@ -131,7 +132,7 @@ export function PosScreen() {
         )}
 
         <SaleCaptureRow
-          articulos={articulos}
+          articulos={articulosVendibles}
           onAgregar={agregarArticulo}
           inputRef={codigoRef}
         />
@@ -154,7 +155,7 @@ export function PosScreen() {
       <PriceLookupDialog
         open={consultaAbierta}
         onOpenChange={setConsultaAbierta}
-        articulos={articulos}
+        articulos={articulosVendibles}
       />
       <CashWithdrawalDialog
         open={retiroAbierto}

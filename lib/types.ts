@@ -5,6 +5,7 @@ export type Articulo = {
   talla: string;
   precio: number;
   existencias: number;
+  activo: boolean;
 };
 
 export type Perfil = {

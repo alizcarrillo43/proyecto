@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react';
 import { EditarArticuloDialog } from '@/components/articulos/editar-articulo-dialog';
 import { EliminarArticuloDialog } from '@/components/articulos/eliminar-articulo-dialog';
 import { NuevoArticuloDialog } from '@/components/articulos/nuevo-articulo-dialog';
@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useArticulos } from '@/hooks/use-articulos';
+import { cambiarPausaArticulo } from '@/lib/inventario-api';
 import { formatMXN } from '@/lib/format';
 import type { Articulo } from '@/lib/types';
 
@@ -26,6 +27,17 @@ export default function ArticulosPage() {
   const [nuevoAbierto, setNuevoAbierto] = useState(false);
   const [articuloEditando, setArticuloEditando] = useState<Articulo | null>(null);
   const [articuloEliminando, setArticuloEliminando] = useState<Articulo | null>(null);
+  const [errorAccion, setErrorAccion] = useState<string | null>(null);
+
+  async function alternarPausa(articulo: Articulo) {
+    setErrorAccion(null);
+    const resultado = await cambiarPausaArticulo(articulo.id, !articulo.activo);
+    if (!resultado.ok) {
+      setErrorAccion(resultado.error);
+      return;
+    }
+    void recargar();
+  }
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8">
@@ -46,6 +58,12 @@ export default function ArticulosPage() {
           </Button>
         )}
       </header>
+
+      {errorAccion && (
+        <p role="alert" className="rounded-2xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
+          {errorAccion}
+        </p>
+      )}
 
       {error ? (
         <div role="alert" className="flex items-center justify-between gap-4 rounded-2xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
@@ -81,7 +99,16 @@ export default function ArticulosPage() {
                 {articulos.map((articulo) => (
                   <TableRow key={articulo.id} className="border-brand-lilac/60">
                     <TableCell className="px-4 py-4 tabular-nums text-brand-grape">{articulo.codigo}</TableCell>
-                    <TableCell className="px-4 py-4 font-medium text-brand-night">{articulo.descripcion}</TableCell>
+                    <TableCell className="px-4 py-4 font-medium text-brand-night">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {articulo.descripcion}
+                        {!articulo.activo && (
+                          <span className="rounded-full bg-warning-soft px-2.5 py-0.5 text-xs font-semibold text-warning">
+                            En pausa
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="px-4 py-4 text-center tabular-nums">{articulo.talla}</TableCell>
                     <TableCell className="px-4 py-4 text-right font-semibold tabular-nums text-brand-night">
                       {formatMXN(articulo.precio)}
@@ -102,6 +129,19 @@ export default function ArticulosPage() {
                     {puedeAgregar && (
                       <TableCell className="px-4 py-4">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => void alternarPausa(articulo)}
+                            aria-label={articulo.activo ? 'Pausar venta' : 'Reanudar venta'}
+                            title={articulo.activo ? 'Pausar venta' : 'Reanudar venta'}
+                            className={articulo.activo
+                              ? 'h-10 w-10 border-brand-mauve bg-white text-brand-plum hover:bg-brand-lilac/40'
+                              : 'h-10 w-10 border-warning/40 bg-white text-warning hover:bg-warning-soft'}
+                          >
+                            {articulo.activo ? <Pause className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}
+                          </Button>
                           <Button
                             type="button"
                             variant="outline"
