@@ -76,10 +76,7 @@ export type DatosEdicionArticulo = {
 
 export type ResultadoEdicion = { ok: true; articulo: Articulo } | { ok: false; error: string };
 
-async function actualizarCampos(
-  id: string,
-  campos: Partial<DatosEdicionArticulo> | { activo: boolean },
-): Promise<ResultadoEdicion> {
+async function actualizarCampos(id: string, campos: DatosEdicionArticulo): Promise<ResultadoEdicion> {
   const { data, error } = await supabase
     .from('articulos')
     .update(campos)
@@ -95,14 +92,16 @@ export function actualizarArticulo(id: string, datos: DatosEdicionArticulo): Pro
   return actualizarCampos(id, datos);
 }
 
-export function cambiarPausaArticulo(id: string, activo: boolean): Promise<ResultadoEdicion> {
-  return actualizarCampos(id, { activo });
+export type ResultadoOperacion = { ok: true } | { ok: false; error: string };
+
+export async function cambiarPausaModelo(codigo: string, activo: boolean): Promise<ResultadoOperacion> {
+  const { error } = await supabase.from('articulos').update({ activo }).eq('codigo', codigo);
+  if (error) return { ok: false, error: 'No pudimos cambiar la venta de este artículo. Intenta de nuevo.' };
+  return { ok: true };
 }
 
-export type ResultadoEliminacion = { ok: true } | { ok: false; error: string };
-
-export async function eliminarArticulo(id: string): Promise<ResultadoEliminacion> {
-  const { error } = await supabase.from('articulos').delete().eq('id', id);
+export async function eliminarModelo(codigo: string): Promise<ResultadoOperacion> {
+  const { error } = await supabase.from('articulos').delete().eq('codigo', codigo);
   if (error) return { ok: false, error: 'No pudimos eliminar el artículo. Intenta de nuevo.' };
   return { ok: true };
 }

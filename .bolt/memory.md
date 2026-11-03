@@ -2,64 +2,57 @@
 
 ## Product intent & audience
 
-- Internal business app for Mexican employees, with authentication, registration, password recovery, role-based access, inventory, sales, and audit history.
-- UI is Spanish-language.
-- Inventory supports shoe models with multiple sizes and per-size stock quantities.
-- Each model uses one shared barcode across all its sizes.
-- Employees created with temporary passwords must change them before accessing Ventas.
-- Sales history preserves auditable line-item details, including seller, item, size, quantity, price, folio, and timestamp.
+- Internal Spanish-language inventory and sales app for Mexican employees.
+- Inventory models represent articles with one shared model-level code and multiple shoe sizes, each with its own stock.
+- Employees primarily consult inventory and sell products; superusers manage stock and article-level actions.
+- Sales history must remain auditable and preserve sold-item details.
 
 ## Brand personality & voice
 
-- Direct, instructional Spanish copy.
-- Form and operational errors should explain the actionable cause.
-- Inventory status labels should be concise and unambiguous, especially availability and paused-sale states.
-- Success messages should summarize a model’s shared barcode and associated sizes without repeating the code unnecessarily.
-- Destructive actions should clarify whether historical sales data is retained.
+- Direct, instructional Spanish copy suited to operational workflows.
+- Stock and availability states should be immediately understandable.
+- Error messages should explain the cause and next action.
+- Destructive or state-changing actions should clarify their scope and historical impact.
 
 ## Visual design & UX direction
 
-- Next.js App Router with Server Components by default; interactive behavior stays behind the appropriate client boundary.
-- Tailwind CSS, shadcn/ui, and Lucide React are the established UI stack.
-- Authenticated screens use the existing session-aware layout and `AuthShell`.
-- Desktop navigation uses a sidebar; mobile navigation uses a bottom bar with logout.
-- Password recovery remains a three-step flow: identify user, enter SMS code, set a new password.
-- Temporary-password changes use `/cambiar-contrasena` and route successfully to Ventas.
-- Sales history displays one row per sold article and remains legible for multi-line sales.
-- Article management supports creating one model with multiple size and quantity entries in a single flow.
-- Creating a model generates one barcode shared by every size entry; the result presents that code once alongside the model’s sizes.
-- Sales barcode lookup must handle multiple matching sizes explicitly: scanning a shared model code prompts the employee to choose a size before adding it, rather than selecting an arbitrary size.
-- Article management supports deleting articles with historical sales, pausing/resuming sale availability, and showing a visible `En pausa` status.
-- Paused articles should not appear in Ventas and should be rejected by the sale operation if submitted through stale UI or another client.
-- Article deletion is expected to preserve historical sales details rather than erase audit records.
+- Existing purple visual system should remain unchanged outside targeted inventory/product-selection views.
+- Inventory table has four columns in this order: `Código`, `Descripción`, `Precio`, `Existencias por talla`.
+- Each article/model appears once. Size data is grouped in one cell with two aligned rows:
+  - `#`: size numbers.
+  - `Existencia`: available pair quantities directly beneath each size.
+- Each model may display its own size range; do not assume a global set of sizes.
+- Zero-stock sizes use a light red background and red text.
+- Inventory table supports horizontal scrolling on narrow screens without breaking the surrounding layout.
+- Employees see inventory as read-only; only the superuser can edit quantities, with editing available per size.
+- Article-level pause/delete actions appear under the article description rather than being repeated per size.
+- Sales product selection remains size-specific because a sale requires an explicit size. The sales screen was not changed in the latest table work.
+- Preserve the existing session-aware app shell, navigation, typography, and general styles.
 
 ## Decisions, constraints & rationale
 
-- Barcode identity is model-level, not size-level. Database uniqueness was adjusted so the same code can be stored for the model’s different size rows while preserving the intended size-specific inventory records.
-- Existing articles retain their previously assigned codes; no migration of old codes was performed.
-- Ventas resolves a shared barcode to its available size choices and requires an explicit size selection when more than one applies.
-- The temporary-password route exists because redirecting employees there previously caused a 404; it uses the root layout’s session guard.
-- Supabase provides authentication, database tables, and Row-Level Security for internal screens; unauthenticated users are redirected to login.
-- Registration and password-recovery server functions are deployed separately; Deno Edge Functions are excluded from TypeScript compilation.
-- SMS recovery depends on an external provider; Twilio remains a candidate but is not configured.
-- Sales history uses `ventas` joined with `detalle_venta` and seller data through `ventas.usuario_id`/`usuarios`; placeholder data was removed.
-- Article deletion was changed to avoid losing historical sales. The implementation preserves the original sold description, size, and price in sales history.
-- Sale availability is controlled with a persisted pause state; pausing affects current sale discovery and validation without deleting inventory data.
-- Multi-size article creation captures model-level information once and records separate size/quantity entries.
-- Type checking/build compilation succeeds after the barcode changes, but the updated barcode and size-selection flow has not been verified in a real browser session.
-- Production builds may still fail across pages when database environment configuration is missing; this has not been established as a code regression.
+- Stock is already stored per size as separate `articulos` rows; no `existencias` table or migration was added.
+- Inventory data is grouped by model in the API/UI layer so a model renders once while retaining size-specific stock.
+- Newly created models use one shared barcode; older records may still have one barcode per size and therefore can appear as separate rows.
+- Article pause and deletion now operate on the complete model/article grouping rather than an individual size row.
+- Historical sales must not be lost when an article is deleted; sold descriptions, sizes, and prices remain available in history.
+- Supabase remains the data/authentication layer with RLS and role-based access.
+- Latest inventory-table changes touched:
+  - `app/(app)/articulos/page.tsx`
+  - `components/articulos/eliminar-articulo-dialog.tsx`
+  - `lib/inventario-api.ts`
+  - `lib/types.ts`
+- Type checking passed after the latest changes.
+- Production build remains blocked when database URL/key environment variables are absent; this is an environment issue not yet established as a code regression.
 
 ## Open questions & assumptions
 
-- Verify shared-barcode creation in the browser, including multiple sizes, stock counts, generated code display, and duplicate/invalid size validation.
-- Verify scanning a shared code in Ventas, selecting each size, stock validation, and behavior when only one size is available.
-- Confirm the database constraint accurately supports one shared code across all size rows without allowing unintended collisions between different models.
-- Confirm how existing articles with legacy per-size codes should behave alongside newly created shared-code models.
-- Verify deletion behavior with an article that has existing sales, including history rendering and foreign-key/RLS edge cases.
-- Verify pausing/resuming in the browser, including stale sale forms and direct server-side sale attempts.
-- Resolve missing database environment variables and rerun a production build.
-- Confirm exact Supabase error variants and useful Spanish translations for password and inventory operations.
-- Twilio credentials and preferred SMS provider remain pending.
-- Confirm the first-admin bootstrapping procedure.
-- Mexican phone numbers are assumed to be 10 digits with the `+52` prefix.
-- The boundary between Supabase Auth and custom user tables remains unclear and should be confirmed against the implementation.
+- Verify in a browser that grouped rows correctly handle models with different size ranges, zero stock, long descriptions, and horizontal scrolling.
+- Verify superuser-only quantity editing and that non-superusers cannot update stock through stale UI or direct requests.
+- Confirm whether legacy articles with one code per size should eventually be consolidated or remain displayed as separate rows.
+- Verify article-level pause/delete behavior when historical sales exist, including RLS and foreign-key edge cases.
+- Verify sales lookup behavior for shared codes, especially explicit size selection and single-size matches.
+- Confirm the database constraint prevents collisions between distinct models while allowing one code across a model’s size records.
+- Resolve missing database environment variables and rerun the production build.
+- Confirm first-admin bootstrapping and the exact boundary between Supabase Auth and custom user records.
+- SMS recovery provider and credentials remain undecided.

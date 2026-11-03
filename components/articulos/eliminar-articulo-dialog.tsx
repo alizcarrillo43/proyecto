@@ -10,15 +10,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { eliminarArticulo } from '@/lib/inventario-api';
-import type { Articulo } from '@/lib/types';
+import { eliminarModelo } from '@/lib/inventario-api';
+import type { ModeloArticulo } from '@/lib/types';
 
 export function EliminarArticuloDialog({
-  articulo,
+  modelo,
   onOpenChange,
   onEliminado,
 }: {
-  articulo: Articulo | null;
+  modelo: ModeloArticulo | null;
   onOpenChange: (open: boolean) => void;
   onEliminado: () => void;
 }) {
@@ -31,10 +31,10 @@ export function EliminarArticuloDialog({
   }
 
   async function confirmar() {
-    if (!articulo) return;
+    if (!modelo) return;
     setError(null);
     setEliminando(true);
-    const resultado = await eliminarArticulo(articulo.id);
+    const resultado = await eliminarModelo(modelo.codigo);
     setEliminando(false);
 
     if (!resultado.ok) {
@@ -46,13 +46,13 @@ export function EliminarArticuloDialog({
   }
 
   return (
-    <Dialog open={articulo !== null} onOpenChange={handleOpenChange}>
+    <Dialog open={modelo !== null} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md rounded-3xl border-brand-lilac bg-brand-mist p-6 sm:p-8">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-brand-night">Eliminar artículo</DialogTitle>
           <DialogDescription className="text-brand-grape">
-            {articulo
-              ? `Se eliminará ${articulo.descripcion}, talla ${articulo.talla}, con ${articulo.existencias} pares en existencias. Las ventas anteriores seguirán en el historial. Esta acción no se puede deshacer.`
+            {modelo
+              ? `Se eliminará ${modelo.descripcion} con sus ${modelo.tallas.length} numeraciones. Las ventas anteriores seguirán en el historial. Esta acción no se puede deshacer.`
               : ''}
           </DialogDescription>
         </DialogHeader>

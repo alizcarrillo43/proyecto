@@ -8,6 +8,14 @@ export type Articulo = {
   activo: boolean;
 };
 
+export type ModeloArticulo = {
+  codigo: string;
+  descripcion: string;
+  precio: number;
+  pausado: boolean;
+  tallas: Articulo[];
+};
+
 export type Perfil = {
   id: string;
   nombre: string;
