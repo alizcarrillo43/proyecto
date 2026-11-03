@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Footprints, House, LogOut, Package, Receipt, Users, type LucideIcon } from 'lucide-react';
+import { Footprints, House, Landmark, LogOut, Package, Receipt, Users, type LucideIcon } from 'lucide-react';
 import { useSesion } from '@/components/session-provider';
 import { cerrarSesion } from '@/lib/auth-api';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,7 @@ const ITEMS_NAVEGACION: ItemNavegacion[] = [
   { href: '/ventas', etiqueta: 'Inicio', icono: House, roles: TODOS },
   { href: '/historial', etiqueta: 'Ventas', icono: Receipt, roles: SOLO_SUPERUSUARIO },
   { href: '/articulos', etiqueta: 'Artículos', icono: Package, roles: TODOS },
+  { href: '/caja', etiqueta: 'Caja', icono: Landmark, roles: TODOS },
   { href: '/empleados', etiqueta: 'Empleados', icono: Users, roles: SOLO_SUPERUSUARIO },
 ];
 

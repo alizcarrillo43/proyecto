@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Landmark } from 'lucide-react';
-import { CajaInicialDialog } from '@/components/pos/caja-inicial-dialog';
+import { CajaInicialDialog } from '@/components/caja/caja-inicial-dialog';
 import { useSesion } from '@/components/session-provider';
 import { Button } from '@/components/ui/button';
 import { cargarCajaDeHoy, type CajaDelDia } from '@/lib/caja-api';

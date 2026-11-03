@@ -3,10 +3,9 @@
 ## Product intent & audience
 
 - Internal Spanish-language inventory and sales app for Mexican employees.
-- Employees consult inventory and register sales; the jefe/superuser manages stock and daily cash setup.
+- Employees consult inventory, register sales, and consult cash totals; the jefe/superuser manages stock and daily cash setup.
 - Inventory models represent articles with one shared model-level code and multiple shoe sizes, each with its own stock.
 - Sales history must remain auditable and preserve sold-item details.
-- Daily sales workflow now includes recording the cash amount available at the start of the day.
 
 ## Brand personality & voice
 
@@ -28,10 +27,10 @@
 - Article-level pause/delete actions appear under the description, not once per size.
 - Sales product capture uses two stages: select an article/model with its price, then select an available size.
 - Sold-out sizes are visibly disabled; scanning or entering a multi-size model code should go directly to size selection.
-- The Ventas screen includes a “Caja inicial de hoy” card above product capture. It displays the current day’s opening cash and the latest update time.
-- The superuser can register or correct the opening amount through a focused dialog; employees can view it but not edit it.
+- Cash information is accessed from a dedicated `Caja` page available to both roles, not from the `Inicio`/Ventas page.
+- The Caja page should clearly present the current cash total/opening amount and latest update information. Employees can consult it; only the superuser sees editing controls.
 - Cash entry should use a clear monetary input and make same-day correction behavior apparent.
-- The opening-cash card should remain useful on reload and fit the existing responsive layout.
+- Preserve the existing responsive layout and session-aware navigation when adding Caja.
 
 ## Decisions, constraints & rationale
 
@@ -43,16 +42,19 @@
 - Supabase remains the data/authentication layer with RLS and role-based access.
 - Sales lookup and capture separate model selection from explicit size selection; existing pricing behavior and the remainder of the sale flow are preserved.
 - Daily opening cash is persisted in a dedicated database record and survives reloads. The current implementation supports reading and same-day insert/update behavior.
-- Only the superuser may write opening cash; employees have read-only access. This is enforced through the database permissions as well as the UI.
+- Only the superuser may write opening cash; employees have read-only access. This is enforced through database permissions as well as the UI.
 - Opening cash is intentionally separate from cash cuts and withdrawals; those workflows were not changed.
-- Recent cash-opening work added the data layer, migration/permissions, form dialog, and Ventas card. Browser validation is still pending.
+- Cash information was moved out of the Inicio/Ventas screen into a dedicated Caja route/menu item so employees can consult it without placing it on the home screen.
+- The Caja menu item and page are visible to employees and superuser; editing remains superuser-only.
 - Recent inventory changes touched `app/(app)/articulos/page.tsx`, `components/articulos/eliminar-articulo-dialog.tsx`, `lib/inventario-api.ts`, and `lib/types.ts`.
 - Production build remains blocked when database URL/key environment variables are absent; this is an environment issue not yet established as a code regression.
+- Type checking for the recent Caja/navigation change passed; browser validation has not yet been completed.
 
 ## Open questions & assumptions
 
-- Verify the opening-cash card and dialog in a browser for superuser and employee sessions, including reload persistence and same-day correction.
-- Confirm how the system should behave when no opening cash has been recorded, including wording and whether sales should be allowed.
+- Verify the Caja page in a browser for superuser and employee sessions, including visibility, read-only employee behavior, reload persistence, and same-day correction.
+- Confirm whether “total en caja” means opening cash only or a calculated current cash total including sales, cuts, or withdrawals; current implementation appears centered on the persisted opening amount.
+- Confirm the desired wording and behavior when no opening cash has been recorded, including whether sales should be allowed.
 - Define whether opening cash is one record per calendar day and which timezone determines the day boundary.
 - Verify currency formatting, decimal handling, negative/invalid amounts, and whether an audit trail is needed for corrections.
 - Verify grouped inventory rows with different size ranges, zero stock, long descriptions, and horizontal scrolling.
