@@ -125,6 +125,19 @@ export function actualizarArticulo(id: string, datos: DatosEdicionArticulo): Pro
 
 export type ResultadoOperacion = { ok: true } | { ok: false; error: string };
 
+export async function actualizarModelo(
+  codigo: string,
+  descripcion: string,
+  precio: number,
+): Promise<ResultadoOperacion> {
+  const { error } = await supabase
+    .from('articulos')
+    .update({ descripcion, precio })
+    .eq('codigo', codigo);
+  if (error) return { ok: false, error: 'No pudimos guardar los cambios. Intenta de nuevo.' };
+  return { ok: true };
+}
+
 export async function cambiarPausaModelo(codigo: string, activo: boolean): Promise<ResultadoOperacion> {
   const { error } = await supabase.from('articulos').update({ activo }).eq('codigo', codigo);
   if (error) return { ok: false, error: 'No pudimos cambiar la venta de este artículo. Intenta de nuevo.' };

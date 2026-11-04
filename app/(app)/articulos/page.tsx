@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Copy, Pause, Play, Plus, Trash2 } from 'lucide-react';
+import { Copy, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react';
 import { DuplicarArticuloDialog } from '@/components/articulos/duplicar-articulo-dialog';
 import { EditarArticuloDialog } from '@/components/articulos/editar-articulo-dialog';
+import { EditarModeloDialog } from '@/components/articulos/editar-modelo-dialog';
 import { EliminarArticuloDialog } from '@/components/articulos/eliminar-articulo-dialog';
 import { NuevoArticuloDialog } from '@/components/articulos/nuevo-articulo-dialog';
 import { useSesion } from '@/components/session-provider';
@@ -81,6 +82,7 @@ export default function ArticulosPage() {
   const modelos = useMemo(() => agruparModelos(articulos), [articulos]);
   const [nuevoAbierto, setNuevoAbierto] = useState(false);
   const [articuloEditando, setArticuloEditando] = useState<Articulo | null>(null);
+  const [modeloEditando, setModeloEditando] = useState<ModeloArticulo | null>(null);
   const [modeloDuplicando, setModeloDuplicando] = useState<ModeloArticulo | null>(null);
   const [modeloEliminando, setModeloEliminando] = useState<ModeloArticulo | null>(null);
   const [errorAccion, setErrorAccion] = useState<string | null>(null);
@@ -166,6 +168,16 @@ export default function ArticulosPage() {
                             type="button"
                             variant="outline"
                             size="sm"
+                            onClick={() => setModeloEditando(modelo)}
+                            className="gap-2 border-brand-plum bg-white text-brand-plum hover:bg-brand-lilac/40"
+                          >
+                            <Pencil className="h-4 w-4" aria-hidden />
+                            Editar
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
                             onClick={() => setModeloDuplicando(modelo)}
                             className="gap-2 border-brand-plum bg-white text-brand-plum hover:bg-brand-lilac/40"
                           >
@@ -224,6 +236,13 @@ export default function ArticulosPage() {
               if (!abierto) setModeloDuplicando(null);
             }}
             onDuplicado={() => void recargar()}
+          />
+          <EditarModeloDialog
+            modelo={modeloEditando}
+            onOpenChange={(abierto) => {
+              if (!abierto) setModeloEditando(null);
+            }}
+            onGuardado={() => void recargar()}
           />
           <EditarArticuloDialog
             articulo={articuloEditando}
