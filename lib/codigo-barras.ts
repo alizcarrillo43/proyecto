@@ -33,6 +33,13 @@ export function generarCodigoEAN13() {
 }
 
 export function patronEAN13(codigo: string) {
+  if (codigo.length !== 13) {
+    return codigo
+      .split('')
+      .map((digito) => `101${PATRON_L[Number(digito)]}0`)
+      .join('') + '101';
+  }
+
   const digitos = codigo.split('').map(Number);
   const paridad = SECUENCIA_PARIDAD[digitos[0]];
   const izquierda = digitos.slice(1, 7).map((digito, indice) =>

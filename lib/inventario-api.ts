@@ -1,4 +1,3 @@
-import { generarCodigoEAN13 } from '@/lib/codigo-barras';
 import { supabase } from '@/lib/supabase';
 import type { Articulo, LineaVenta, ModeloArticulo } from '@/lib/types';
 
@@ -21,7 +20,6 @@ const MENSAJES_VENTA: Record<string, string> = {
 const MENSAJE_GENERICO_VENTA = 'No pudimos guardar la venta. Intenta de nuevo.';
 
 const COLUMNAS_ARTICULO = 'id, codigo, descripcion, talla, precio, existencias, activo';
-const INTENTOS_CODIGO = 3;
 
 export function agruparModelos(articulos: Articulo[]): ModeloArticulo[] {
   const porCodigo = new Map<string, Articulo[]>();
@@ -67,6 +65,7 @@ export async function cargarArticulos(): Promise<Articulo[]> {
 }
 
 export type DatosArticulo = {
+  codigo: string;
   descripcion: string;
   talla: string;
   precio: number;
@@ -76,18 +75,15 @@ export type DatosArticulo = {
 export type ResultadoAlta = { ok: true; articulos: Articulo[] } | { ok: false; error: string };
 
 export async function crearArticulos(datos: DatosArticulo[]): Promise<ResultadoAlta> {
-  for (let intento = 0; intento < INTENTOS_CODIGO; intento++) {
-    const codigo = generarCodigoEAN13();
-    const { data, error } = await supabase
-      .from('articulos')
-      .insert(datos.map((fila) => ({ ...fila, codigo })))
-      .select(COLUMNAS_ARTICULO);
-    if (!error && Array.isArray(data)) return { ok: true, articulos: data.map(aArticulo) };
-    if (error?.code !== '23505') {
-      return { ok: false, error: 'No pudimos guardar los artículos. Intenta de nuevo.' };
-    }
+  const { data, error } = await supabase
+    .from('articulos')
+    .insert(datos)
+    .select(COLUMNAS_ARTICULO);
+  if (!error && Array.isArray(data)) return { ok: true, articulos: data.map(aArticulo) };
+  if (error?.code === '23505') {
+    return { ok: false, error: 'Ese código ya está registrado para una de las numeraciones. Usa otro código.' };
   }
-  return { ok: false, error: 'No pudimos generar un código de barras único. Intenta de nuevo.' };
+  return { ok: false, error: 'No pudimos guardar los artículos. Intenta de nuevo.' };
 }
 
 export type DatosEdicionArticulo = {

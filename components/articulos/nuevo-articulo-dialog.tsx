@@ -18,11 +18,11 @@ import { crearArticulos, type DatosArticulo } from '@/lib/inventario-api';
 import type { Articulo } from '@/lib/types';
 
 type Numeracion = { key: number; talla: string; existencias: string };
-type Campos = { descripcion: string; precio: string };
-type Errores = { descripcion?: string; precio?: string; numeraciones: Record<number, string> };
+type Campos = { codigo: string; descripcion: string; precio: string };
+type Errores = { codigo?: string; descripcion?: string; precio?: string; numeraciones: Record<number, string> };
 
 const CAMPO_CLASES = 'h-12 border-brand-lilac focus-visible:ring-brand-plum';
-const CAMPOS_VACIOS: Campos = { descripcion: '', precio: '' };
+const CAMPOS_VACIOS: Campos = { codigo: '', descripcion: '', precio: '' };
 
 function nuevaNumeracion(key: number): Numeracion {
   return { key, talla: '', existencias: '' };
@@ -30,6 +30,8 @@ function nuevaNumeracion(key: number): Numeracion {
 
 function validar(campos: Campos, numeraciones: Numeracion[]): Errores {
   const errores: Errores = { numeraciones: {} };
+  const codigo = campos.codigo.trim();
+  if (!/^\d{1,5}$/.test(codigo)) errores.codigo = 'Escribe un código numérico de hasta 5 dígitos';
   if (!campos.descripcion.trim()) errores.descripcion = 'Escribe la descripción del modelo';
   const precio = Number(campos.precio);
   if (campos.precio.trim() === '' || !Number.isFinite(precio) || precio < 0) {
@@ -53,7 +55,7 @@ function validar(campos: Campos, numeraciones: Numeracion[]): Errores {
 }
 
 function hayErrores(errores: Errores) {
-  return Boolean(errores.descripcion || errores.precio || Object.keys(errores.numeraciones).length > 0);
+  return Boolean(errores.codigo || errores.descripcion || errores.precio || Object.keys(errores.numeraciones).length > 0);
 }
 
 export function NuevoArticuloDialog({
@@ -111,7 +113,9 @@ export function NuevoArticuloDialog({
     if (hayErrores(erroresLocales)) return;
 
     const precio = Math.round(Number(campos.precio) * 100) / 100;
+    const codigo = campos.codigo.trim().padStart(5, '0');
     const datos: DatosArticulo[] = numeraciones.map((numeracion) => ({
+      codigo,
       descripcion: campos.descripcion.trim(),
       talla: numeracion.talla.trim(),
       precio,
@@ -196,6 +200,22 @@ export function NuevoArticuloDialog({
                   {error}
                 </p>
               )}
+
+              <div className="space-y-2">
+                <Label htmlFor="articulo-codigo" className="pl-1 text-brand-night">Código del modelo</Label>
+                <Input
+                  id="articulo-codigo"
+                  inputMode="numeric"
+                  maxLength={5}
+                  value={campos.codigo}
+                  onChange={(event) => setCampos((actuales) => ({ ...actuales, codigo: event.target.value.replace(/\D/g, '').slice(0, 5) }))}
+                  aria-invalid={Boolean(errores.codigo)}
+                  placeholder="00100"
+                  className={`${CAMPO_CLASES} tabular-nums`}
+                />
+                <p className="pl-1 text-xs text-brand-grape">Si escribes 100, se guardará como 00100.</p>
+                {errores.codigo && <p className="pl-1 text-sm font-medium text-danger">{errores.codigo}</p>}
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="articulo-descripcion" className="pl-1 text-brand-night">Descripción del modelo</Label>
