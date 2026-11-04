@@ -1,44 +1,48 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Landmark } from 'lucide-react';
-import { CajaInicialDialog } from '@/components/caja/caja-inicial-dialog';
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Landmark, ArrowRight } from 'lucide-react';
 import { useSesion } from '@/components/session-provider';
 import { Button } from '@/components/ui/button';
-import { cargarCajaDeHoy, type CajaDelDia } from '@/lib/caja-api';
-import { formatMXN } from '@/lib/format';
-
-function horaDeActualizacion(iso: string): string {
-  return new Intl.DateTimeFormat('es-MX', {
-    timeZone: 'America/Mexico_City',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(iso));
-}
+import { cargarTurnoAbiertoId, cargarDetalleTurno, type DetalleTurno } from '@/lib/turnos-api';
+import { formatMXN, formatearFechaHora } from '@/lib/format';
 
 export function CajaInicialCard() {
   const { perfil } = useSesion();
-  const puedeEditar = perfil?.rol === 'superusuario';
-  const [caja, setCaja] = useState<CajaDelDia | null>(null);
+  const [detalle, setDetalle] = useState<DetalleTurno | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dialogoAbierto, setDialogoAbierto] = useState(false);
 
-  async function cargar() {
+  const cargar = useCallback(async () => {
     setCargando(true);
-    const resultado = await cargarCajaDeHoy();
+    const idResult = await cargarTurnoAbiertoId();
+    if (!idResult.ok) {
+      setError(idResult.error);
+      setCargando(false);
+      return;
+    }
+    if (!idResult.data) {
+      setError(null);
+      setDetalle(null);
+      setCargando(false);
+      return;
+    }
+    const detalleResult = await cargarDetalleTurno(idResult.data);
     setCargando(false);
-    if (!resultado.ok) {
-      setError(resultado.error);
+    if (!detalleResult.ok) {
+      setError(detalleResult.error);
       return;
     }
     setError(null);
-    setCaja(resultado.caja);
-  }
+    setDetalle(detalleResult.data);
+  }, []);
 
   useEffect(() => {
     void cargar();
-  }, []);
+  }, [cargar]);
+
+  const esSuperusuario = perfil?.rol === 'superusuario';
 
   return (
     <section
@@ -51,45 +55,44 @@ export function CajaInicialCard() {
         </span>
         <div className="min-w-0">
           <h2 id="caja-inicial-titulo" className="text-sm font-semibold uppercase tracking-wide text-brand-grape">
-            Caja inicial de hoy
+            Caja del turno
           </h2>
           {error ? (
             <p role="alert" className="text-sm font-medium text-danger">{error}</p>
           ) : cargando ? (
             <p className="text-brand-grape">Cargando...</p>
-          ) : caja ? (
-            <p className="text-2xl font-bold tabular-nums text-brand-night">
-              {formatMXN(caja.monto)}
-              <span className="ml-2 text-sm font-medium text-brand-grape">
-                actualizada a las {horaDeActualizacion(caja.actualizadoEn)}
-              </span>
-            </p>
+          ) : detalle ? (
+            <div className="space-y-1">
+              <p className="text-2xl font-bold tabular-nums text-brand-night">
+                {formatMXN(detalle.turno.fondoInicial)}
+                <span className="ml-2 text-sm font-medium text-brand-grape">
+                  fondo inicial
+                </span>
+              </p>
+              <p className="text-sm text-brand-grape">
+                Efectivo a entregar: <span className="font-semibold tabular-nums text-brand-night">{formatMXN(detalle.totales.efectivoAEntregar)}</span>
+              </p>
+              <p className="text-xs text-brand-grape">
+                Turno abierto desde {formatearFechaHora(detalle.turno.fechaApertura)}
+              </p>
+            </div>
           ) : (
             <p className="text-brand-grape">
-              {puedeEditar ? 'Aún no registras el efectivo con el que inicia la caja.' : 'El superusuario aún no registra la caja inicial.'}
+              {esSuperusuario
+                ? 'No hay un turno abierto. Abre un turno desde la gestión de turnos para registrar el fondo inicial.'
+                : 'No tienes un turno abierto. Pide al encargado que abra tu turno.'}
             </p>
           )}
         </div>
       </div>
 
-      {puedeEditar && !cargando && !error && (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setDialogoAbierto(true)}
-          className="h-11 border-brand-plum bg-white px-5 text-brand-plum hover:bg-brand-lilac/40 hover:text-brand-night"
-        >
-          {caja ? 'Corregir monto' : 'Registrar caja inicial'}
+      {!cargando && !error && (
+        <Button asChild variant="outline" className="h-11 border-brand-plum bg-white px-5 text-brand-plum hover:bg-brand-lilac/40 hover:text-brand-night">
+          <Link href="/turno">
+            {esSuperusuario ? 'Gestión de turnos' : 'Ver mi turno'}
+            <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+          </Link>
         </Button>
-      )}
-
-      {puedeEditar && (
-        <CajaInicialDialog
-          open={dialogoAbierto}
-          onOpenChange={setDialogoAbierto}
-          montoActual={caja?.monto ?? null}
-          onGuardado={setCaja}
-        />
       )}
     </section>
   );
