@@ -54,21 +54,30 @@ export function PosScreen() {
     0
   );
 
-  function agregarArticulo(articulo: Articulo) {
-    const linea = lineas.find((item) => item.articuloId === articulo.id);
-    if (!linea) {
-      if (articulo.existencias <= 0) {
-        toast.error(MENSAJE_SIN_EXISTENCIAS);
-        return;
+  function agregarArticulo(articulosAgregar: Articulo[]) {
+    if (articulosAgregar.length === 0) return;
+    let agregadas = 0;
+    for (const articulo of articulosAgregar) {
+      const linea = lineas.find((item) => item.articuloId === articulo.id);
+      if (!linea) {
+        if (articulo.existencias <= 0) {
+          toast.error(`${articulo.descripcion} (talla ${articulo.talla}): ${MENSAJE_SIN_EXISTENCIAS}`);
+          continue;
+        }
+        setLineas((actuales) => [...actuales, crearLinea(articulo)]);
+        agregadas++;
+        continue;
       }
-      setLineas((actuales) => [...actuales, crearLinea(articulo)]);
-      return;
+      if (linea.cantidad >= linea.existencias) {
+        toast.error(`${articulo.descripcion} (talla ${articulo.talla}): ${MENSAJE_SIN_EXISTENCIAS}`);
+        continue;
+      }
+      cambiarCantidad(articulo.id, 1);
+      agregadas++;
     }
-    if (linea.cantidad >= linea.existencias) {
-      toast.error(MENSAJE_SIN_EXISTENCIAS);
-      return;
+    if (agregadas > 0) {
+      toast.success(`${agregadas} ${agregadas === 1 ? 'artículo agregado' : 'artículos agregados'}`);
     }
-    cambiarCantidad(articulo.id, 1);
   }
 
   function cambiarCantidad(articuloId: string, cambio: number) {
