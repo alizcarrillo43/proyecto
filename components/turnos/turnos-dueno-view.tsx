@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,13 +24,20 @@ function diasAbierto(fechaApertura: string, ahora: Date) {
   return Math.floor((ahora.getTime() - new Date(fechaApertura).getTime()) / (24 * 60 * 60 * 1000));
 }
 
-export function TurnosDuenoView({ onVerTurno }: { onVerTurno: (turnoId: string) => void }) {
+export function TurnosDuenoView({
+  onVerTurno,
+  onAbrirTurno,
+}: {
+  onVerTurno: (turnoId: string) => void;
+  onAbrirTurno: () => void;
+}) {
   const [empleados, setEmpleados] = useState<EmpleadoTurno[]>([]);
   const [turnos, setTurnos] = useState<TurnoListado[]>([]);
   const [turnosAbiertos, setTurnosAbiertos] = useState<TurnoListado[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
   const [filtroEmpleado, setFiltroEmpleado] = useState(TODOS);
+  const [filtroEstado, setFiltroEstado] = useState<'todos' | 'abierto' | 'cerrado'>('todos');
   const [desde, setDesde] = useState('');
   const [hasta, setHasta] = useState('');
   const [version, setVersion] = useState(0);
@@ -69,11 +76,21 @@ export function TurnosDuenoView({ onVerTurno }: { onVerTurno: (turnoId: string) 
     };
   }, [filtroEmpleado, desde, hasta, version, ahora]);
 
+  const turnosVisibles = filtroEstado === 'todos'
+    ? turnos
+    : turnos.filter((turno) => turno.estado === filtroEstado);
+
   return (
     <div className="mx-auto max-w-6xl space-y-8 p-4 sm:p-6 lg:p-8">
-      <header>
-        <p className="text-sm font-semibold uppercase tracking-wide text-brand-grape">Turnos de caja</p>
-        <h1 className="mt-1 text-3xl font-bold text-brand-night">Historial de turnos</h1>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-wide text-brand-grape">Turnos de caja</p>
+          <h1 className="mt-1 text-3xl font-bold text-brand-night">Historial de turnos</h1>
+        </div>
+        <Button onClick={onAbrirTurno} className="h-11 bg-brand-plum text-white hover:bg-brand-grape">
+          <Plus className="mr-2 h-4 w-4" aria-hidden />
+          Abrir turno
+        </Button>
       </header>
 
       {turnosAbiertos.length > 0 && (
@@ -97,7 +114,7 @@ export function TurnosDuenoView({ onVerTurno }: { onVerTurno: (turnoId: string) 
         </section>
       )}
 
-      <section className="grid gap-4 rounded-3xl border border-brand-lilac bg-white p-6 shadow-sm md:grid-cols-4">
+      <section className="grid gap-4 rounded-3xl border border-brand-lilac bg-white p-6 shadow-sm md:grid-cols-5">
         <div className="space-y-2">
           <Label className="text-brand-night">Empleado</Label>
           <Select value={filtroEmpleado} onValueChange={setFiltroEmpleado}>
@@ -115,6 +132,17 @@ export function TurnosDuenoView({ onVerTurno }: { onVerTurno: (turnoId: string) 
           </Select>
         </div>
         <div className="space-y-2">
+          <Label className="text-brand-night">Estado</Label>
+          <Select value={filtroEstado} onValueChange={(valor) => setFiltroEstado(valor as 'todos' | 'abierto' | 'cerrado')}>
+            <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="abierto">Abiertos</SelectItem>
+              <SelectItem value="cerrado">Cerrados</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="desde-turnos" className="text-brand-night">Desde</Label>
           <Input id="desde-turnos" type="date" value={desde} onChange={(evento) => setDesde(evento.target.value)} className="h-11" />
         </div>
@@ -127,6 +155,7 @@ export function TurnosDuenoView({ onVerTurno }: { onVerTurno: (turnoId: string) 
             variant="outline"
             onClick={() => {
               setFiltroEmpleado(TODOS);
+              setFiltroEstado('todos');
               setDesde('');
               setHasta('');
             }}
@@ -149,7 +178,7 @@ export function TurnosDuenoView({ onVerTurno }: { onVerTurno: (turnoId: string) 
       <section className="overflow-hidden rounded-3xl border border-brand-lilac bg-white shadow-sm">
         {cargando ? (
           <p className="p-8 text-center text-sm font-medium text-brand-grape" role="status">Cargando turnos...</p>
-        ) : turnos.length === 0 ? (
+        ) : turnosVisibles.length === 0 ? (
           <p className="p-8 text-center text-sm text-brand-grape">No hay turnos con esos filtros.</p>
         ) : (
           <div className="overflow-x-auto">
@@ -166,7 +195,7 @@ export function TurnosDuenoView({ onVerTurno }: { onVerTurno: (turnoId: string) 
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {turnos.map((turno) => (
+                {turnosVisibles.map((turno) => (
                   <TableRow
                     key={turno.id}
                     onClick={() => onVerTurno(turno.id)}

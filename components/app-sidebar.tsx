@@ -23,6 +23,8 @@ const ITEMS_NAVEGACION: ItemNavegacion[] = [
   { href: '/historial', etiqueta: 'Ventas', icono: Receipt, roles: SOLO_SUPERUSUARIO },
   { href: '/articulos', etiqueta: 'Artículos', icono: Package, roles: TODOS },
   { href: '/caja', etiqueta: 'Caja', icono: Landmark, roles: TODOS },
+  { href: '/turno', etiqueta: 'Mi turno', icono: Landmark, roles: TODOS },
+  { href: '/gestion-turnos', etiqueta: 'Turnos', icono: Receipt, roles: SOLO_SUPERUSUARIO },
   { href: '/empleados', etiqueta: 'Empleados', icono: Users, roles: SOLO_SUPERUSUARIO },
 ];
 
