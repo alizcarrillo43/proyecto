@@ -18,11 +18,11 @@ import { crearArticulos, type DatosArticulo } from '@/lib/inventario-api';
 import type { Articulo } from '@/lib/types';
 
 type Numeracion = { key: number; talla: string; existencias: string };
-type Campos = { codigo: string; descripcion: string; precio: string };
-type Errores = { codigo?: string; descripcion?: string; precio?: string; numeraciones: Record<number, string> };
+type Campos = { codigo: string; descripcion: string; precio: string; color: string };
+type Errores = { codigo?: string; descripcion?: string; precio?: string; color?: string; numeraciones: Record<number, string> };
 
 const CAMPO_CLASES = 'h-12 border-brand-lilac focus-visible:ring-brand-plum';
-const CAMPOS_VACIOS: Campos = { codigo: '', descripcion: '', precio: '' };
+const CAMPOS_VACIOS: Campos = { codigo: '', descripcion: '', precio: '', color: '' };
 
 function nuevaNumeracion(key: number): Numeracion {
   return { key, talla: '', existencias: '' };
@@ -33,6 +33,7 @@ function validar(campos: Campos, numeraciones: Numeracion[]): Errores {
   const codigo = campos.codigo.trim();
   if (!/^\d{1,5}$/.test(codigo)) errores.codigo = 'Escribe un código numérico de hasta 5 dígitos';
   if (!campos.descripcion.trim()) errores.descripcion = 'Escribe la descripción del modelo';
+  if (!campos.color.trim()) errores.color = 'Escribe el color del modelo';
   const precio = Number(campos.precio);
   if (campos.precio.trim() === '' || !Number.isFinite(precio) || precio < 0) {
     errores.precio = 'Escribe un precio válido';
@@ -55,7 +56,7 @@ function validar(campos: Campos, numeraciones: Numeracion[]): Errores {
 }
 
 function hayErrores(errores: Errores) {
-  return Boolean(errores.codigo || errores.descripcion || errores.precio || Object.keys(errores.numeraciones).length > 0);
+  return Boolean(errores.codigo || errores.descripcion || errores.precio || errores.color || Object.keys(errores.numeraciones).length > 0);
 }
 
 export function NuevoArticuloDialog({
@@ -118,6 +119,7 @@ export function NuevoArticuloDialog({
       codigo,
       descripcion: campos.descripcion.trim(),
       talla: numeracion.talla.trim(),
+      color: campos.color.trim(),
       precio,
       existencias: Number(numeracion.existencias),
     }));
@@ -250,6 +252,20 @@ export function NuevoArticuloDialog({
                   />
                 </div>
                 {errores.precio && <p className="pl-1 text-sm font-medium text-danger">{errores.precio}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="articulo-color" className="pl-1 text-brand-night">Color</Label>
+                <Input
+                  id="articulo-color"
+                  value={campos.color}
+                  onChange={(event) => setCampos((actuales) => ({ ...actuales, color: event.target.value }))}
+                  aria-invalid={Boolean(errores.color)}
+                  placeholder="Por ejemplo: Negro, Azul marino, Rojo"
+                  className={CAMPO_CLASES}
+                />
+                {errores.color && <p className="pl-1 text-sm font-medium text-danger">{errores.color}</p>}
+                <p className="pl-1 text-xs text-brand-grape">El color se aplica a todas las numeraciones de este modelo.</p>
               </div>
 
               <div className="space-y-3">
