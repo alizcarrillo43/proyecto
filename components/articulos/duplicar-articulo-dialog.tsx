@@ -57,12 +57,22 @@ function FormularioDuplicar({
   onCancelar: () => void;
   onDuplicado: () => void;
 }) {
-  const tallasOriginales = [...modelo.tallas]
-    .sort((a, b) => a.talla.localeCompare(b.talla, 'es', { numeric: true }))
-    .map((t) => ({ talla: t.talla, existencias: '0' }));
+  const tallasUnicas = (() => {
+    const vistas = new Set<string>();
+    const resultado: { talla: string; existencias: string }[] = [];
+    for (const talla of [...modelo.tallas].sort((a, b) =>
+      a.talla.localeCompare(b.talla, 'es', { numeric: true }),
+    )) {
+      if (!vistas.has(talla.talla)) {
+        vistas.add(talla.talla);
+        resultado.push({ talla: talla.talla, existencias: '0' });
+      }
+    }
+    return resultado;
+  })();
 
   const [color, setColor] = useState('');
-  const [filas, setFilas] = useState<FilaTalla[]>(tallasOriginales);
+  const [filas, setFilas] = useState<FilaTalla[]>(tallasUnicas);
   const [errorColor, setErrorColor] = useState<string | null>(null);
   const [errorFilas, setErrorFilas] = useState<Record<number, string>>({});
   const [error, setError] = useState<string | null>(null);

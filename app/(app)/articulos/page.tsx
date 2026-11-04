@@ -75,6 +75,42 @@ function TallasExistencias({
   );
 }
 
+function FilasColoresModelo({
+  modelo,
+  editable,
+  onEditar,
+}: {
+  modelo: ModeloArticulo;
+  editable: boolean;
+  onEditar: (articulo: Articulo) => void;
+}) {
+  if (modelo.colores.length <= 1) {
+    const color = modelo.colores[0]?.color ?? '';
+    return (
+      <div className="space-y-2">
+        {color && (
+          <span className="inline-block rounded-full bg-brand-lavender px-2.5 py-0.5 text-xs font-semibold text-brand-night">
+            {color}
+          </span>
+        )}
+        <TallasExistencias tallas={modelo.tallas} editable={editable} onEditar={onEditar} />
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-4">
+      {modelo.colores.map((grupo) => (
+        <div key={grupo.color} className="space-y-2">
+          <span className="inline-block rounded-full bg-brand-lavender px-2.5 py-0.5 text-xs font-semibold text-brand-night">
+            {grupo.color || 'Sin color'}
+          </span>
+          <TallasExistencias tallas={grupo.tallas} editable={editable} onEditar={onEditar} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ArticulosPage() {
   const { articulos, cargando, error, recargar } = useArticulos();
   const { perfil } = useSesion();
@@ -213,7 +249,7 @@ export default function ArticulosPage() {
                       {formatMXN(modelo.precio)}
                     </TableCell>
                     <TableCell className="px-4 py-4 align-top">
-                      <TallasExistencias tallas={modelo.tallas} editable={puedeEditar} onEditar={setArticuloEditando} />
+                      <FilasColoresModelo modelo={modelo} editable={puedeEditar} onEditar={setArticuloEditando} />
                     </TableCell>
                   </TableRow>
                 ))}
