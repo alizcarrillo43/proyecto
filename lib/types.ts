@@ -47,6 +47,7 @@ export type LineaVenta = {
   codigo: string;
   descripcion: string;
   talla: string;
+  color: string;
   precio: number;
   cantidad: number;
   existencias: number;

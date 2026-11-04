@@ -61,7 +61,7 @@ export function TicketVentaDialog({
                     <div className="min-w-0">
                       <p className="font-semibold">{linea.descripcion}</p>
                       <p className="text-brand-grape">
-                        Talla {linea.talla} · {linea.cantidad} x {formatMXN(linea.precio)}
+                        {linea.color ? `${linea.color} · ` : ''}Talla {linea.talla} · {linea.cantidad} x {formatMXN(linea.precio)}
                       </p>
                     </div>
                     <p className="font-semibold tabular-nums">{formatMXN(linea.precio * linea.cantidad)}</p>

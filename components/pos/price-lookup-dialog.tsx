@@ -87,7 +87,7 @@ export function PriceLookupDialog({
                       {articulo.descripcion}
                     </p>
                     <p className="text-sm text-brand-grape">
-                      Talla {articulo.talla} · {articulo.existencias} en existencia
+                      {articulo.color ? `${articulo.color} · ` : ''}Talla {articulo.talla} · {articulo.existencias} en existencia
                     </p>
                   </div>
                   <p className="shrink-0 text-xl font-bold tabular-nums text-brand-night">

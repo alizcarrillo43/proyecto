@@ -41,6 +41,7 @@ export function SaleTable({
           <TableHeader className="bg-brand-lilac hover:bg-brand-lilac">
             <TableRow className="border-brand-mauve/40 hover:bg-transparent">
               <TableHead className="h-12 px-4 text-brand-night">Descripción</TableHead>
+              <TableHead className="h-12 px-4 text-center text-brand-night">Color</TableHead>
               <TableHead className="h-12 px-4 text-center text-brand-night">Número</TableHead>
               <TableHead className="h-12 px-4 text-right text-brand-night">Precio unitario</TableHead>
               <TableHead className="h-12 px-4 text-center text-brand-night">Cantidad (pz)</TableHead>
@@ -58,6 +59,9 @@ export function SaleTable({
                   <span className="block text-sm font-normal text-brand-grape tabular-nums">
                     {linea.codigo}
                   </span>
+                </TableCell>
+                <TableCell className="px-4 py-4 text-center text-base text-brand-grape">
+                  {linea.color || '—'}
                 </TableCell>
                 <TableCell className="px-4 py-4 text-center text-base tabular-nums">
                   {linea.talla}

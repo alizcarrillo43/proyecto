@@ -26,6 +26,7 @@ function crearLinea(articulo: Articulo, cantidad = 1): LineaVenta {
     codigo: articulo.codigo,
     descripcion: articulo.descripcion,
     talla: articulo.talla,
+    color: articulo.color,
     precio: articulo.precio,
     existencias: articulo.existencias,
     cantidad,

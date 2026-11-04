@@ -28,13 +28,19 @@ export function SaleCaptureRow({
 }) {
   const [codigo, setCodigo] = useState('');
   const [modeloCodigo, setModeloCodigo] = useState('');
+  const [colorElegido, setColorElegido] = useState('');
   const [articuloId, setArticuloId] = useState('');
   const modelos = useMemo(() => agruparModelos(articulos), [articulos]);
   const modeloElegido = modelos.find((modelo) => modelo.codigo === modeloCodigo) ?? null;
 
+  const coloresDisponibles = modeloElegido?.colores ?? [];
+  const colorActual = coloresDisponibles.find((c) => c.color === colorElegido) ?? null;
+  const tallasDelColor = colorActual?.tallas ?? [];
+
   function limpiar() {
     setCodigo('');
     setModeloCodigo('');
+    setColorElegido('');
     setArticuloId('');
   }
 
@@ -45,6 +51,12 @@ export function SaleCaptureRow({
 
   function elegirModelo(codigoModelo: string) {
     setModeloCodigo(codigoModelo);
+    setColorElegido('');
+    setArticuloId('');
+  }
+
+  function elegirColor(color: string) {
+    setColorElegido(color);
     setArticuloId('');
   }
 
@@ -58,13 +70,17 @@ export function SaleCaptureRow({
         toast.error('Código no encontrado');
         return;
       }
-      if (modelo.tallas.length === 1) {
-        agregar(modelo.tallas[0]);
+      if (modelo.colores.length === 1 && modelo.colores[0].tallas.length === 1) {
+        agregar(modelo.colores[0].tallas[0]);
         return;
       }
       setCodigo('');
       elegirModelo(modelo.codigo);
-      toast.info('Este modelo tiene varias tallas. Elige la tuya.');
+      if (modelo.colores.length > 1) {
+        toast.info('Este modelo tiene varios colores. Elige el color y la talla.');
+      } else {
+        toast.info('Este modelo tiene varias tallas. Elige la talla.');
+      }
       return;
     }
 
@@ -72,7 +88,11 @@ export function SaleCaptureRow({
       toast.error('Escribe un código o elige un artículo');
       return;
     }
-    const articulo = modeloElegido.tallas.find((talla) => talla.id === articuloId);
+    if (modeloElegido.colores.length > 1 && !colorElegido) {
+      toast.error('Elige el color');
+      return;
+    }
+    const articulo = tallasDelColor.find((talla) => talla.id === articuloId);
     if (!articulo) {
       toast.error('Elige la talla');
       return;
@@ -83,7 +103,7 @@ export function SaleCaptureRow({
   return (
     <form
       onSubmit={handleSubmit}
-      className="grid gap-4 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-brand-lilac sm:p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_auto] md:items-end"
+      className="grid gap-4 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-brand-lilac sm:p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto] md:items-end"
     >
       <div className="space-y-2">
         <Label htmlFor="codigo-barras" className="pl-1 text-brand-night">
@@ -130,13 +150,40 @@ export function SaleCaptureRow({
       </div>
 
       <div className="space-y-2">
+        <Label htmlFor="color" className="pl-1 text-brand-night">
+          Color
+        </Label>
+        <Select
+          value={colorElegido}
+          onValueChange={elegirColor}
+          disabled={!modeloElegido || modeloElegido.colores.length <= 1}
+        >
+          <SelectTrigger
+            id="color"
+            className="h-12 rounded-full border-brand-lilac bg-brand-lilac/40 px-4 text-base focus:ring-brand-plum"
+          >
+            <SelectValue placeholder={modeloElegido && modeloElegido.colores.length <= 1
+              ? (modeloElegido.colores[0]?.color || 'Único')
+              : 'Elige el color'} />
+          </SelectTrigger>
+          <SelectContent className="rounded-2xl">
+            {coloresDisponibles.map((grupo) => (
+              <SelectItem key={grupo.color} value={grupo.color}>
+                {grupo.color || 'Sin color'}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="talla" className="pl-1 text-brand-night">
           Talla
         </Label>
         <Select
           value={articuloId}
           onValueChange={setArticuloId}
-          disabled={!modeloElegido}
+          disabled={!colorActual}
         >
           <SelectTrigger
             id="talla"
@@ -145,7 +192,7 @@ export function SaleCaptureRow({
             <SelectValue placeholder="Elige la talla" />
           </SelectTrigger>
           <SelectContent className="rounded-2xl">
-            {modeloElegido?.tallas.map((talla) => (
+            {tallasDelColor.map((talla) => (
               <SelectItem key={talla.id} value={talla.id} disabled={talla.existencias <= 0}>
                 Talla {talla.talla} · {talla.existencias <= 0 ? 'Agotada' : `${talla.existencias} disp.`}
               </SelectItem>
