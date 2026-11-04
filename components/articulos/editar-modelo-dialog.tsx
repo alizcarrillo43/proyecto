@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { actualizarModelo } from '@/lib/inventario-api';
+import { actualizarColorModelo, actualizarModelo } from '@/lib/inventario-api';
 import type { ModeloArticulo } from '@/lib/types';
 
 const CAMPO_CLASES = 'h-12 border-brand-lilac focus-visible:ring-brand-plum';
@@ -53,7 +53,7 @@ export function EditarModeloDialog({
 }) {
   return (
     <Dialog open={modelo !== null} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md rounded-3xl border-brand-lilac bg-brand-mist p-6 sm:p-8">
+      <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto rounded-3xl border-brand-lilac bg-brand-mist p-6 sm:p-8">
         {modelo && (
           <FormularioEdicionModelo
             key={modelo.codigo}
@@ -84,30 +84,77 @@ function FormularioEdicionModelo({
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
+  const coloresIniciales = modelo.colores.map((c) => c.color);
+  const [colores, setColores] = useState<string[]>(coloresIniciales);
+  const [errorColorIdx, setErrorColorIdx] = useState<Record<number, string>>({});
+
   function actualizarCampo(campo: keyof Campos, valor: string) {
     setCampos((actuales) => ({ ...actuales, [campo]: valor }));
+  }
+
+  function actualizarColor(index: number, valor: string) {
+    setColores((actuales) => actuales.map((c, i) => (i === index ? valor : c)));
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setErrorColorIdx({});
 
     const erroresLocales = validar(campos);
     setErrores(erroresLocales);
     if (Object.keys(erroresLocales).length > 0) return;
 
+    const coloresTrim = colores.map((c) => c.trim());
+
+    const vacios = coloresTrim.findIndex((c) => !c);
+    if (vacios !== -1) {
+      setErrorColorIdx({ [vacios]: 'Escribe un color' });
+      return;
+    }
+
+    const vistos = new Map<string, number>();
+    let duplicadoIdx = -1;
+    for (let i = 0; i < coloresTrim.length; i++) {
+      const lower = coloresTrim[i].toLowerCase();
+      if (vistos.has(lower)) {
+        duplicadoIdx = i;
+        break;
+      }
+      vistos.set(lower, i);
+    }
+    if (duplicadoIdx !== -1) {
+      setErrorColorIdx({ [duplicadoIdx]: 'No puedes repetir el mismo color' });
+      return;
+    }
+
     setGuardando(true);
-    const resultado = await actualizarModelo(
+
+    const resultadoModelo = await actualizarModelo(
       modelo.codigo,
       campos.descripcion.trim(),
       Math.round(Number(campos.precio) * 100) / 100,
     );
-    setGuardando(false);
-
-    if (!resultado.ok) {
-      setError(resultado.error);
+    if (!resultadoModelo.ok) {
+      setGuardando(false);
+      setError(resultadoModelo.error);
       return;
     }
+
+    for (let i = 0; i < coloresIniciales.length; i++) {
+      const original = coloresIniciales[i];
+      const nuevo = coloresTrim[i];
+      if (original === nuevo) continue;
+
+      const resultadoColor = await actualizarColorModelo(modelo.codigo, original, nuevo);
+      if (!resultadoColor.ok) {
+        setGuardando(false);
+        setError(resultadoColor.error);
+        return;
+      }
+    }
+
+    setGuardando(false);
     onGuardado();
   }
 
@@ -161,10 +208,26 @@ function FormularioEdicionModelo({
           </p>
         </div>
 
-        {modelo.colores.length > 0 && (
-          <div className="rounded-2xl bg-white p-3 text-sm text-brand-grape ring-1 ring-brand-lilac">
-            <p className="font-semibold text-brand-night">Colores de este modelo:</p>
-            <p className="mt-1">{modelo.colores.map((c) => c.color || 'Sin color').join(', ')}</p>
+        {colores.length > 0 && (
+          <div className="space-y-2">
+            <p className="pl-1 text-sm font-semibold text-brand-night">Colores</p>
+            {colores.map((color, index) => (
+              <div key={index} className="space-y-1">
+                <Input
+                  value={color}
+                  onChange={(event) => actualizarColor(index, event.target.value)}
+                  aria-invalid={Boolean(errorColorIdx[index])}
+                  className={CAMPO_CLASES}
+                  placeholder="Nombre del color"
+                />
+                {errorColorIdx[index] && (
+                  <p className="pl-1 text-sm font-medium text-danger">{errorColorIdx[index]}</p>
+                )}
+              </div>
+            ))}
+            <p className="pl-1 text-xs text-brand-grape">
+              Cambia el nombre del color y se actualizarán todas las tallas de ese color.
+            </p>
           </div>
         )}
 

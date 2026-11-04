@@ -138,6 +138,29 @@ export async function actualizarModelo(
   return { ok: true };
 }
 
+export async function actualizarColorModelo(
+  codigo: string,
+  colorActual: string,
+  nuevoColor: string,
+): Promise<ResultadoOperacion> {
+  const colorTrim = nuevoColor.trim();
+  if (!colorTrim) {
+    return { ok: false, error: 'Escribe un color válido.' };
+  }
+  const { error } = await supabase
+    .from('articulos')
+    .update({ color: colorTrim })
+    .eq('codigo', codigo)
+    .eq('color', colorActual);
+  if (error) {
+    if (error.code === '23505') {
+      return { ok: false, error: 'Ya existe una variante con ese color en este modelo.' };
+    }
+    return { ok: false, error: 'No pudimos guardar el color. Intenta de nuevo.' };
+  }
+  return { ok: true };
+}
+
 export async function cambiarPausaModelo(codigo: string, activo: boolean): Promise<ResultadoOperacion> {
   const { error } = await supabase.from('articulos').update({ activo }).eq('codigo', codigo);
   if (error) return { ok: false, error: 'No pudimos cambiar la venta de este artículo. Intenta de nuevo.' };
