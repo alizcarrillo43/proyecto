@@ -19,7 +19,7 @@ const MENSAJES_VENTA: Record<string, string> = {
 
 const MENSAJE_GENERICO_VENTA = 'No pudimos guardar la venta. Intenta de nuevo.';
 
-const COLUMNAS_ARTICULO = 'id, codigo, descripcion, talla, precio, existencias, activo';
+const COLUMNAS_ARTICULO = 'id, codigo, descripcion, talla, precio, existencias, activo, color';
 
 export function agruparModelos(articulos: Articulo[]): ModeloArticulo[] {
   const porCodigo = new Map<string, Articulo[]>();
@@ -31,12 +31,23 @@ export function agruparModelos(articulos: Articulo[]): ModeloArticulo[] {
   return Array.from(porCodigo.values()).map((grupo) => {
     const tallas = [...grupo].sort((a, b) => a.talla.localeCompare(b.talla, 'es', { numeric: true }));
     const primera = tallas[0];
+    const porColor = new Map<string, Articulo[]>();
+    for (const articulo of tallas) {
+      const c = porColor.get(articulo.color);
+      if (c) c.push(articulo);
+      else porColor.set(articulo.color, [articulo]);
+    }
+    const colores = Array.from(porColor.entries()).map(([color, arts]) => ({
+      color,
+      tallas: [...arts].sort((a, b) => a.talla.localeCompare(b.talla, 'es', { numeric: true })),
+    }));
     return {
       codigo: primera.codigo,
       descripcion: primera.descripcion,
       precio: primera.precio,
       pausado: tallas.some((talla) => !talla.activo),
       tallas,
+      colores,
     };
   });
 }
@@ -50,6 +61,7 @@ function aArticulo(fila: Record<string, unknown>): Articulo {
     precio: Number(fila.precio),
     existencias: Number(fila.existencias),
     activo: Boolean(fila.activo),
+    color: String(fila.color ?? ''),
   };
 }
 
@@ -70,6 +82,7 @@ export type DatosArticulo = {
   talla: string;
   precio: number;
   existencias: number;
+  color?: string;
 };
 
 export type ResultadoAlta = { ok: true; articulos: Articulo[] } | { ok: false; error: string };
@@ -77,11 +90,11 @@ export type ResultadoAlta = { ok: true; articulos: Articulo[] } | { ok: false; e
 export async function crearArticulos(datos: DatosArticulo[]): Promise<ResultadoAlta> {
   const { data, error } = await supabase
     .from('articulos')
-    .insert(datos)
+    .insert(datos.map(({ color, ...resto }) => ({ ...resto, color: color ?? '' })))
     .select(COLUMNAS_ARTICULO);
   if (!error && Array.isArray(data)) return { ok: true, articulos: data.map(aArticulo) };
   if (error?.code === '23505') {
-    return { ok: false, error: 'Ese código ya está registrado para una de las numeraciones. Usa otro código.' };
+    return { ok: false, error: 'Ese código ya está registrado para una numeración con ese color. Usa otro código o color.' };
   }
   return { ok: false, error: 'No pudimos guardar los artículos. Intenta de nuevo.' };
 }

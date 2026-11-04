@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Pause, Play, Plus, Trash2 } from 'lucide-react';
+import { Copy, Pause, Play, Plus, Trash2 } from 'lucide-react';
+import { DuplicarArticuloDialog } from '@/components/articulos/duplicar-articulo-dialog';
 import { EditarArticuloDialog } from '@/components/articulos/editar-articulo-dialog';
 import { EliminarArticuloDialog } from '@/components/articulos/eliminar-articulo-dialog';
 import { NuevoArticuloDialog } from '@/components/articulos/nuevo-articulo-dialog';
@@ -80,6 +81,7 @@ export default function ArticulosPage() {
   const modelos = useMemo(() => agruparModelos(articulos), [articulos]);
   const [nuevoAbierto, setNuevoAbierto] = useState(false);
   const [articuloEditando, setArticuloEditando] = useState<Articulo | null>(null);
+  const [modeloDuplicando, setModeloDuplicando] = useState<ModeloArticulo | null>(null);
   const [modeloEliminando, setModeloEliminando] = useState<ModeloArticulo | null>(null);
   const [errorAccion, setErrorAccion] = useState<string | null>(null);
 
@@ -164,6 +166,16 @@ export default function ArticulosPage() {
                             type="button"
                             variant="outline"
                             size="sm"
+                            onClick={() => setModeloDuplicando(modelo)}
+                            className="gap-2 border-brand-plum bg-white text-brand-plum hover:bg-brand-lilac/40"
+                          >
+                            <Copy className="h-4 w-4" aria-hidden />
+                            Duplicar
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
                             onClick={() => void alternarPausa(modelo)}
                             className={modelo.pausado
                               ? 'gap-2 border-warning/40 bg-white text-warning hover:bg-warning-soft'
@@ -205,6 +217,13 @@ export default function ArticulosPage() {
             open={nuevoAbierto}
             onOpenChange={setNuevoAbierto}
             onCreado={() => void recargar()}
+          />
+          <DuplicarArticuloDialog
+            modelo={modeloDuplicando}
+            onOpenChange={(abierto) => {
+              if (!abierto) setModeloDuplicando(null);
+            }}
+            onDuplicado={() => void recargar()}
           />
           <EditarArticuloDialog
             articulo={articuloEditando}

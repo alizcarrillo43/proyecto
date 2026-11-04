@@ -6,6 +6,7 @@ export type Articulo = {
   precio: number;
   existencias: number;
   activo: boolean;
+  color: string;
 };
 
 export type ModeloArticulo = {
@@ -13,6 +14,12 @@ export type ModeloArticulo = {
   descripcion: string;
   precio: number;
   pausado: boolean;
+  tallas: Articulo[];
+  colores: ColorArticulo[];
+};
+
+export type ColorArticulo = {
+  color: string;
   tallas: Articulo[];
 };
 
