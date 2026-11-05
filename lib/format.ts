@@ -21,8 +21,11 @@ const formatoFechaHora = new Intl.DateTimeFormat('es-MX', {
   timeStyle: 'short',
 });
 
-export function formatearDia(fechaIso: string) {
-  return formatoDia.format(new Date(`${fechaIso}T00:00:00Z`));
+export function formatearDia(fechaIso?: string | null) {
+  if (!fechaIso) return '—';
+  const fecha = new Date(`${fechaIso.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(fecha.getTime())) return '—';
+  return formatoDia.format(fecha);
 }
 
 export function formatearFechaHora(fecha: string | Date) {
