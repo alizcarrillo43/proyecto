@@ -155,7 +155,7 @@ function mapearTurno(raw: Json): Turno {
 
 function mapearDia(raw: Json): DiaTurno {
   return {
-    fecha: String(raw.dia),
+    fecha: aTextoONulo(raw.dia) ?? aTextoONulo(raw.fecha) ?? '',
     numVentas: aNumero(raw.num_ventas),
     piezas: aNumero(raw.piezas),
     totalVendido: aNumero(raw.total_vendido),
