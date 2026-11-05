@@ -104,7 +104,7 @@ Crea un punto de venta web para una zapatería con tres pantallas:
 
 1. Función para duplicar un artículo en otro color.
 2. Convertir el sistema en un servicio multi-negocio: cada persona que se registre crea su propio negocio como superusuario, con sus datos aislados.
-3. Plan gratuito (hasta 15 artículos y 1 empleada) y plan de paga con límites ampliados.
+3. Plan gratuito (hasta 15 artículos y 1 empleado) y plan de paga con límites ampliados.
 4. Pagos en línea para la mejora de plan.
 5. Página pública de presentación del producto.
 
